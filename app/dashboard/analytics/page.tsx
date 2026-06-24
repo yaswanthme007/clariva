@@ -240,7 +240,7 @@ export default function AnalyticsPage() {
                   ) : null
                 }
               />
-              <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
+              <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8, color: "#9ca3af" }} />
               <Line type="monotone" dataKey="expected" name="Expected" stroke="#fafafa" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               <Line type="monotone" dataKey="actual" name="Actual" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
@@ -345,7 +345,7 @@ export default function AnalyticsPage() {
             </BarChart>
           </ResponsiveContainer>
           <p className="text-xs text-muted-foreground mt-4">
-            <span className="text-emerald-600 font-medium">Green</span> = on time · <span className="text-amber-600 font-medium">amber</span> = mild delay · <span className="text-rose-600 font-medium">red</span> = significant delay
+            <span className="text-emerald-400 font-medium">Green</span> = on time · <span className="text-amber-400 font-medium">amber</span> = mild delay · <span className="text-rose-400 font-medium">red</span> = significant delay
           </p>
         </ChartCard>
       </div>

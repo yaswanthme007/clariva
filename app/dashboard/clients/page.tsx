@@ -87,19 +87,19 @@ const fmt = (n: number) =>
 
 function scoreStyle(score: number) {
   if (score >= 70) return {
-    stroke: "#10b981", trackStroke: "#d1fae5",
-    label: "Reliable",  textCls: "text-emerald-600",
-    bgCls: "bg-emerald-50", ringCls: "ring-emerald-200",
+    stroke: "#10b981", trackStroke: "rgba(255,255,255,0.08)",
+    label: "Reliable",  textCls: "text-emerald-400",
+    bgCls: "bg-emerald-500/10", ringCls: "ring-emerald-500/20",
   }
   if (score >= 40) return {
-    stroke: "#f59e0b", trackStroke: "#fef3c7",
-    label: "Moderate",  textCls: "text-amber-600",
-    bgCls: "bg-amber-50", ringCls: "ring-amber-200",
+    stroke: "#f59e0b", trackStroke: "rgba(255,255,255,0.08)",
+    label: "Moderate",  textCls: "text-amber-400",
+    bgCls: "bg-amber-500/10", ringCls: "ring-amber-500/20",
   }
   return {
-    stroke: "#f43f5e", trackStroke: "#ffe4e6",
-    label: "At-Risk",   textCls: "text-rose-600",
-    bgCls: "bg-rose-50", ringCls: "ring-rose-200",
+    stroke: "#f43f5e", trackStroke: "rgba(255,255,255,0.08)",
+    label: "At-Risk",   textCls: "text-rose-400",
+    bgCls: "bg-rose-500/10", ringCls: "ring-rose-500/20",
   }
 }
 
@@ -170,7 +170,7 @@ export default function ClientsPage() {
         </div>
         <button
           onClick={() => setAddOpen(v => !v)}
-          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-white text-sm font-semibold transition-all hover:bg-indigo-700 active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-gray-100 active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
           <span className="hidden sm:inline">Add Client</span>
@@ -202,7 +202,7 @@ export default function ClientsPage() {
           placeholder="Search clients…"
           value={search}
           onChange={e => setSearch(e.target.value)}
-          className="w-full h-9 pl-9 pr-3 rounded-lg text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+          className="w-full h-9 pl-9 pr-3 rounded-lg text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
           style={{ border: "1px solid var(--border)" }}
         />
       </div>
@@ -224,14 +224,14 @@ export default function ClientsPage() {
                 <input
                   type="text"
                   placeholder={f.placeholder}
-                  className="w-full h-9 px-3 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                  className="w-full h-9 px-3 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
                   style={{ border: "1px solid var(--border)" }}
                 />
               </div>
             ))}
           </div>
           <div className="flex items-center gap-2 mt-5">
-            <button className="h-9 px-4 rounded-lg text-sm font-semibold bg-primary text-white hover:bg-indigo-700 transition-colors">
+            <button className="h-9 px-4 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-gray-100 transition-colors">
               Save Client
             </button>
             <button
@@ -285,7 +285,7 @@ export default function ClientsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-muted-foreground mb-0.5">Outstanding</p>
-                    <p className={`text-sm font-semibold tabular-nums ${client.outstanding > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+                    <p className={`text-sm font-semibold tabular-nums ${client.outstanding > 0 ? "text-rose-400" : "text-emerald-400"}`}>
                       {client.outstanding > 0 ? fmt(client.outstanding) : "Cleared"}
                     </p>
                   </div>
@@ -297,7 +297,7 @@ export default function ClientsPage() {
                     <p className="text-xs text-muted-foreground mb-0.5">Avg Days Late</p>
                     <div className="flex items-center gap-1">
                       {TREND_ICON[client.trend]}
-                      <p className={`text-sm font-semibold tabular-nums ${client.avgDaysLate > 10 ? "text-rose-600" : client.avgDaysLate > 4 ? "text-amber-600" : "text-emerald-600"}`}>
+                      <p className={`text-sm font-semibold tabular-nums ${client.avgDaysLate > 10 ? "text-rose-400" : client.avgDaysLate > 4 ? "text-amber-400" : "text-emerald-400"}`}>
                         {client.avgDaysLate === 0 ? "On time" : `+${client.avgDaysLate}d`}
                       </p>
                     </div>

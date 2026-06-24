@@ -94,21 +94,21 @@ const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })
 
 function scoreStyle(score: number) {
-  if (score >= 70) return { stroke: "#10b981", track: "#d1fae5", label: "Reliable", textCls: "text-emerald-600", bgCls: "bg-emerald-50", ringCls: "ring-emerald-200" }
-  if (score >= 40) return { stroke: "#f59e0b", track: "#fef3c7", label: "Moderate", textCls: "text-amber-600",   bgCls: "bg-amber-50",   ringCls: "ring-amber-200" }
-  return                  { stroke: "#f43f5e", track: "#ffe4e6", label: "At-Risk",  textCls: "text-rose-600",    bgCls: "bg-rose-50",    ringCls: "ring-rose-200" }
+  if (score >= 70) return { stroke: "#10b981", track: "rgba(255,255,255,0.08)", label: "Reliable", textCls: "text-emerald-400", bgCls: "bg-emerald-500/10", ringCls: "ring-emerald-500/20" }
+  if (score >= 40) return { stroke: "#f59e0b", track: "rgba(255,255,255,0.08)", label: "Moderate", textCls: "text-amber-400",   bgCls: "bg-amber-500/10",   ringCls: "ring-amber-500/20" }
+  return                  { stroke: "#f43f5e", track: "rgba(255,255,255,0.08)", label: "At-Risk",  textCls: "text-rose-400",    bgCls: "bg-rose-500/10",    ringCls: "ring-rose-500/20" }
 }
 
 const STATUS_STYLE: Record<ClientInvoice["status"], string> = {
-  Paid:    "text-emerald-600 bg-emerald-50 ring-emerald-200",
-  Pending: "text-amber-600 bg-amber-50 ring-amber-200",
-  Overdue: "text-rose-600 bg-rose-50 ring-rose-200",
+  Paid:    "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20",
+  Pending: "text-amber-400 bg-amber-500/10 ring-amber-500/20",
+  Overdue: "text-rose-400 bg-rose-500/10 ring-rose-500/20",
 }
 
 const RISK_STYLE: Record<ClientInvoice["risk"], string> = {
-  Low:    "text-emerald-600 bg-emerald-50 ring-emerald-200",
-  Medium: "text-amber-600 bg-amber-50 ring-amber-200",
-  High:   "text-rose-600 bg-rose-50 ring-rose-200",
+  Low:    "text-emerald-400 bg-emerald-500/10 ring-emerald-500/20",
+  Medium: "text-amber-400 bg-amber-500/10 ring-amber-500/20",
+  High:   "text-rose-400 bg-rose-500/10 ring-rose-500/20",
 }
 
 const TREND_ICON = {
@@ -204,7 +204,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
           <a
             href={`mailto:${client.email}`}
-            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-white text-sm font-semibold transition-all hover:bg-indigo-700 active:scale-[0.98] w-fit"
+            className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-gray-100 active:scale-[0.98] w-fit"
           >
             <Mail className="w-4 h-4" />
             Email Client
@@ -237,14 +237,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
           <div className="bg-card rounded-xl px-6 py-5 flex flex-col justify-center" style={{ border: "1px solid var(--border)" }}>
             <p className="text-xs text-muted-foreground mb-1">Outstanding</p>
-            <p className={`text-3xl font-bold tabular-nums ${client.outstanding > 0 ? "text-rose-600" : "text-emerald-600"}`}>
+            <p className={`text-3xl font-bold tabular-nums ${client.outstanding > 0 ? "text-rose-400" : "text-emerald-400"}`}>
               {client.outstanding > 0 ? fmt(client.outstanding) : "Cleared"}
             </p>
             <p className="text-xs text-muted-foreground mt-2">across open invoices</p>
           </div>
           <div className="bg-card rounded-xl px-6 py-5 flex flex-col justify-center" style={{ border: "1px solid var(--border)" }}>
             <p className="text-xs text-muted-foreground mb-1">On-Time Rate</p>
-            <p className="text-3xl font-bold text-emerald-600 tabular-nums">87%</p>
+            <p className="text-3xl font-bold text-emerald-400 tabular-nums">87%</p>
             <p className="text-xs text-muted-foreground mt-2">13 of 15 paid on time</p>
           </div>
         </div>
@@ -270,7 +270,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </BarChart>
         </ResponsiveContainer>
         <p className="text-xs text-muted-foreground mt-4">
-          Color reflects speed: <span className="text-emerald-600 font-medium">green ≤7d</span> · <span className="text-amber-600 font-medium">amber 8–10d</span> · <span className="text-rose-600 font-medium">red &gt;10d</span>
+          Color reflects speed: <span className="text-emerald-400 font-medium">green ≤7d</span> · <span className="text-amber-400 font-medium">amber 8–10d</span> · <span className="text-rose-400 font-medium">red &gt;10d</span>
         </p>
       </div>
 
@@ -283,7 +283,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
             placeholder="Search invoice #…"
             value={search}
             onChange={e => setSearch(e.target.value)}
-            className="h-9 px-3 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow w-full sm:w-56"
+            className="h-9 px-3 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow w-full sm:w-56"
             style={{ border: "1px solid var(--border)" }}
           />
         </div>
