@@ -3,9 +3,23 @@ import { ArrowRight } from 'lucide-react'
 
 export function CtaBanner() {
   return (
-    <section className="py-24 sm:py-32 bg-[#0a0a0a]">
-      <div className="max-w-6xl mx-auto px-5 sm:px-8 text-center">
-        <p className="text-xs font-semibold text-indigo-400 uppercase tracking-widest mb-4">
+    <section className="relative py-24 sm:py-32 bg-[#0a0a0a] overflow-hidden">
+      {/* Radial indigo glow behind heading */}
+      <div
+        aria-hidden
+        className="pointer-events-none absolute inset-0 flex items-center justify-center"
+      >
+        <div
+          style={{
+            width: '600px',
+            height: '400px',
+            background: 'radial-gradient(ellipse at center, rgba(79,70,229,0.05) 0%, transparent 70%)',
+          }}
+        />
+      </div>
+
+      <div className="relative max-w-6xl mx-auto px-5 sm:px-8 text-center">
+        <p className="text-xs font-semibold text-emerald-500 uppercase tracking-widest mb-4">
           Get started today
         </p>
         <h2 className="text-4xl sm:text-5xl font-bold text-white tracking-tight text-balance mb-5 leading-[1.1]">

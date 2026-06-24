@@ -87,12 +87,19 @@ export function Hero() {
             <div className="flex-1 text-center lg:text-left max-w-2xl mx-auto lg:mx-0">
               {/* Badge */}
               <div
-                className={`inline-flex items-center gap-2 rounded-full border border-indigo-200 bg-indigo-50 px-3 py-1 text-xs font-medium text-primary mb-6 ${mounted ? 'anim-fade-up' : 'opacity-0'}`}
-                style={{ animationDelay: '0ms' }}
+                className={`inline-flex items-center gap-2 rounded-full mb-6 ${mounted ? 'anim-fade-up' : 'opacity-0'}`}
+                style={{
+                  animationDelay: '0ms',
+                  background: 'rgba(255,255,255,0.08)',
+                  border: '1px solid rgba(255,255,255,0.15)',
+                  padding: '6px 16px',
+                  color: 'rgba(255,255,255,0.9)',
+                  fontSize: '13px',
+                }}
               >
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-60" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+                <span className="relative flex h-2 w-2 shrink-0">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-500 opacity-60" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500" />
                 </span>
                 AI-powered invoice intelligence — now in beta
               </div>
