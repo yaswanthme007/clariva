@@ -44,7 +44,7 @@ export function Navbar() {
           left: 0;
           width: 0;
           height: 2px;
-          background: #4f46e5;
+          background: #fafafa;
           transition: width 200ms ease;
         }
         .nav-link:hover {
@@ -54,14 +54,14 @@ export function Navbar() {
           width: 100%;
         }
         .nav-link-scrolled {
-          color: #6b7280;
+          color: #a1a1aa;
           transition: color 200ms ease;
         }
         .nav-link-scrolled::after {
-          background: #4f46e5;
+          background: #fafafa;
         }
         .nav-link-scrolled:hover {
-          color: #0f0f23;
+          color: #fafafa;
         }
         .btn-scale {
           transition: transform 200ms ease, background-color 200ms ease, color 200ms ease;
@@ -120,7 +120,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="#"
-                className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium px-4 py-2 hover:bg-indigo-700 btn-scale"
+                className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium px-4 py-2 hover:bg-gray-100 btn-scale"
               >
                 Get Started
               </Link>
@@ -163,7 +163,7 @@ export function Navbar() {
               </Link>
               <Link
                 href="#"
-                className="text-sm font-medium text-center py-2 rounded-lg bg-primary text-primary-foreground hover:bg-indigo-700 transition-colors duration-200"
+                className="text-sm font-medium text-center py-2 rounded-lg bg-primary text-primary-foreground hover:bg-gray-100 transition-colors duration-200"
               >
                 Get Started
               </Link>

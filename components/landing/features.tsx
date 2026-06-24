@@ -16,8 +16,8 @@ const features = [
   },
   {
     icon: ShieldAlert,
-    iconBg: 'bg-rose-50',
-    iconColor: 'text-rose-500',
+    iconBg: 'bg-rose-500/10',
+    iconColor: 'text-rose-400',
     title: 'Payment Risk Scoring',
     description:
       "Each invoice receives a 0–100 risk score the moment it's created, based on the client's payment history, industry benchmarks, and behavioural signals.",
@@ -26,8 +26,8 @@ const features = [
   },
   {
     icon: BellRing,
-    iconBg: 'bg-amber-50',
-    iconColor: 'text-amber-500',
+    iconBg: 'bg-amber-500/10',
+    iconColor: 'text-amber-400',
     title: 'Smart Reminders',
     description:
       "Clariva's AI picks the optimal send time and tone for each client — polite nudge or firm notice — so you never have an awkward conversation again.",
@@ -99,7 +99,7 @@ export function Features() {
               return (
                 <div
                   key={feat.title}
-                  className={`feat-card relative bg-card rounded-xl border border-border border-l-[3px] ${feat.accent} p-6 hover:shadow-[0_4px_20px_-4px_rgba(79,70,229,0.1)] transition-shadow btn-scale ${visible ? 'visible' : ''}`}
+                  className={`feat-card relative bg-card rounded-xl border border-border border-l-[3px] ${feat.accent} p-6 hover:shadow-[0_4px_20px_-4px_rgba(0,0,0,0.5)] hover:border-white/15 transition-all btn-scale ${visible ? 'visible' : ''}`}
                   style={{ animationDelay: `${idx * 150}ms` }}
                 >
                   {/* Icon */}

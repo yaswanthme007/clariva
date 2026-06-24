@@ -10,8 +10,8 @@ const invoices = [
     amount: '$4,800',
     due: 'Due in 3 days',
     risk: 'High risk',
-    riskColor: 'text-rose-600',
-    riskBg: 'bg-rose-50',
+    riskColor: 'text-rose-400',
+    riskBg: 'bg-rose-500/10',
     dotColor: 'bg-rose-500',
     icon: TrendingDown,
     iconColor: 'text-rose-500',
@@ -21,8 +21,8 @@ const invoices = [
     amount: '$1,250',
     due: 'Due in 7 days',
     risk: 'Low risk',
-    riskColor: 'text-emerald-600',
-    riskBg: 'bg-emerald-50',
+    riskColor: 'text-emerald-400',
+    riskBg: 'bg-emerald-500/10',
     dotColor: 'bg-emerald-500',
     icon: TrendingUp,
     iconColor: 'text-emerald-500',
@@ -32,8 +32,8 @@ const invoices = [
     amount: '$3,100',
     due: 'Due in 5 days',
     risk: 'Medium risk',
-    riskColor: 'text-amber-600',
-    riskBg: 'bg-amber-50',
+    riskColor: 'text-amber-400',
+    riskBg: 'bg-amber-500/10',
     dotColor: 'bg-amber-500',
     icon: AlertTriangle,
     iconColor: 'text-amber-500',
@@ -78,7 +78,7 @@ export function Hero() {
         {/* Soft background tint */}
         <div
           aria-hidden
-          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,#e0e7ff_0%,transparent_70%)]"
+          className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_80%_60%_at_50%_-10%,rgba(255,255,255,0.05)_0%,transparent_70%)]"
         />
 
         <div className="max-w-6xl mx-auto px-5 sm:px-8">
@@ -113,7 +113,7 @@ export function Hero() {
                   Know who&apos;ll pay late —
                 </span>
                 <span
-                  className={`block text-primary ${mounted ? 'anim-fade-up' : 'opacity-0'}`}
+                  className={`block text-foreground ${mounted ? 'anim-fade-up' : 'opacity-0'}`}
                   style={{ animationDelay: '180ms' }}
                 >
                   before they do.
@@ -135,7 +135,7 @@ export function Hero() {
               >
                 <Link
                   href="#"
-                  className="btn-scale w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium px-6 py-3 text-sm hover:bg-indigo-700"
+                  className="btn-scale w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium px-6 py-3 text-sm hover:bg-gray-100"
                 >
                   Start for free
                   <ArrowRight className="w-4 h-4" />
@@ -159,7 +159,7 @@ export function Hero() {
                 Trusted by{' '}
                 <span className="font-semibold text-foreground">2,400+</span>{' '}
                 freelancers &amp; small businesses.{' '}
-                <span className="text-emerald-600 font-medium">No credit card required.</span>
+                <span className="text-emerald-400 font-medium">No credit card required.</span>
               </p>
             </div>
 
@@ -168,7 +168,7 @@ export function Hero() {
               className={`flex-1 w-full max-w-md lg:max-w-none ${mounted ? 'anim-fade-left' : 'opacity-0'}`}
               style={{ animationDelay: '500ms' }}
             >
-              <div className="relative bg-card rounded-2xl border border-border shadow-[0_4px_24px_-4px_rgba(79,70,229,0.12)] overflow-hidden">
+              <div className="relative bg-card rounded-2xl border border-border shadow-[0_4px_24px_-4px_rgba(0,0,0,0.5)] overflow-hidden">
                 {/* Card header */}
                 <div className="flex items-center justify-between px-5 py-4 border-b border-border">
                   <div>

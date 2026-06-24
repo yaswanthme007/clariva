@@ -8,15 +8,7 @@
   --font-sans: 'Inter', 'Inter Fallback', ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), 'Geist Mono Fallback', ui-monospace, monospace;
 
-  /* Brand colors */
-  --color-indigo-50:  #eef2ff;
-  --color-indigo-100: #e0e7ff;
-  --color-indigo-200: #c7d2fe;
-  --color-indigo-500: #6366f1;
-  --color-indigo-600: #4f46e5;
-  --color-indigo-700: #4338ca;
-  --color-indigo-900: #312e81;
-
+  /* Accent colors (status only) */
   --color-emerald-50:  #ecfdf5;
   --color-emerald-100: #d1fae5;
   --color-emerald-500: #10b981;
@@ -67,45 +59,45 @@
 }
 
 :root {
-  color-scheme: light;
+  color-scheme: dark;
 
-  /* Base */
-  --background:         #f8f9fc;
-  --foreground:         #0f0f23;
-  --card:               #ffffff;
-  --card-foreground:    #0f0f23;
-  --popover:            #ffffff;
-  --popover-foreground: #0f0f23;
+  /* Base — dark monochrome */
+  --background:         #0a0a0a;
+  --foreground:         #fafafa;
+  --card:               #111111;
+  --card-foreground:    #fafafa;
+  --popover:            #111111;
+  --popover-foreground: #fafafa;
 
-  /* Primary — deep indigo */
-  --primary:            #4f46e5;
-  --primary-foreground: #ffffff;
+  /* Primary — white on black */
+  --primary:            #fafafa;
+  --primary-foreground: #0a0a0a;
 
-  /* Secondary — very light indigo tint */
-  --secondary:            #eef2ff;
-  --secondary-foreground: #4338ca;
+  /* Secondary — elevated dark surface */
+  --secondary:            #1a1a1a;
+  --secondary-foreground: #fafafa;
 
   /* Muted */
-  --muted:            #f1f4fb;
-  --muted-foreground: #6b7280;
+  --muted:            #1a1a1a;
+  --muted-foreground: #a1a1aa;
 
-  /* Accent — soft indigo hover */
-  --accent:            #e0e7ff;
-  --accent-foreground: #3730a3;
+  /* Accent — subtle elevated surface */
+  --accent:            #1a1a1a;
+  --accent-foreground: #fafafa;
 
   /* Semantic */
-  --destructive: #e11d48;
-  --border:      #e5e7f0;
-  --input:       #e5e7f0;
-  --ring:        #4f46e5;
+  --destructive: #f43f5e;
+  --border:      rgba(255, 255, 255, 0.08);
+  --input:       rgba(255, 255, 255, 0.12);
+  --ring:        rgba(255, 255, 255, 0.2);
 
-  /* Custom brand tokens */
-  --success:            #059669;
-  --success-foreground: #ffffff;
-  --warning:            #d97706;
-  --warning-foreground: #ffffff;
-  --danger:             #e11d48;
-  --danger-foreground:  #ffffff;
+  /* Custom status tokens */
+  --success:            #10b981;
+  --success-foreground: #0a0a0a;
+  --warning:            #f59e0b;
+  --warning-foreground: #0a0a0a;
+  --danger:             #f43f5e;
+  --danger-foreground:  #0a0a0a;
 
   --radius: 0.625rem;
 }

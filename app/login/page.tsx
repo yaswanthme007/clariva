@@ -31,7 +31,7 @@ export default function LoginPage() {
         <div style={{
           width: "700px",
           height: "500px",
-          background: "radial-gradient(ellipse at center, rgba(79,70,229,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, transparent 70%)",
         }} />
       </div>
 
@@ -40,7 +40,7 @@ export default function LoginPage() {
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8 group">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <span className="text-xl font-bold tracking-tight text-foreground">
             Clariva
@@ -75,7 +75,7 @@ export default function LoginPage() {
                 placeholder="you@company.com"
                 value={email}
                 onChange={e => { setEmail(e.target.value); setError("") }}
-                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                 style={{ border: "1px solid var(--border)" }}
               />
             </div>
@@ -101,7 +101,7 @@ export default function LoginPage() {
                   placeholder="••••••••"
                   value={password}
                   onChange={e => { setPassword(e.target.value); setError("") }}
-                  className="w-full h-10 rounded-lg px-3 pr-10 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                  className="w-full h-10 rounded-lg px-3 pr-10 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                   style={{ border: "1px solid var(--border)" }}
                 />
                 <button

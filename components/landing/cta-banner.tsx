@@ -4,7 +4,7 @@ import { ArrowRight } from 'lucide-react'
 export function CtaBanner() {
   return (
     <section className="relative py-24 sm:py-32 bg-[#0a0a0a] overflow-hidden">
-      {/* Radial indigo glow behind heading */}
+      {/* Radial glow behind heading */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0 flex items-center justify-center"
@@ -13,7 +13,7 @@ export function CtaBanner() {
           style={{
             width: '600px',
             height: '400px',
-            background: 'radial-gradient(ellipse at center, rgba(79,70,229,0.05) 0%, transparent 70%)',
+            background: 'radial-gradient(ellipse at center, rgba(255,255,255,0.06) 0%, transparent 70%)',
           }}
         />
       </div>

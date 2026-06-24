@@ -24,7 +24,7 @@ const testimonials = [
     name: 'Marcus Osei',
     role: 'Co-founder, Volta Studio',
     initials: 'MO',
-    color: 'bg-emerald-50 text-emerald-700',
+    color: 'bg-emerald-500/10 text-emerald-400',
   },
   {
     quote:
@@ -32,7 +32,7 @@ const testimonials = [
     name: 'Priya Iyer',
     role: 'Freelance developer',
     initials: 'PI',
-    color: 'bg-amber-50 text-amber-700',
+    color: 'bg-amber-500/10 text-amber-400',
   },
 ]
 
