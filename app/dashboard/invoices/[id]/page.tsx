@@ -71,15 +71,15 @@ const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 })
 
 const STATUS_STYLE: Record<Status, string> = {
-  Paid:    "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
-  Pending: "bg-amber-50   text-amber-700   ring-1 ring-inset ring-amber-200",
-  Overdue: "bg-rose-50    text-rose-700    ring-1 ring-inset ring-rose-200",
+  Paid:    "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20",
+  Pending: "bg-amber-500/10   text-amber-400   ring-1 ring-inset ring-amber-500/20",
+  Overdue: "bg-rose-500/10    text-rose-400    ring-1 ring-inset ring-rose-500/20",
 }
 
 function riskColor(score: number) {
-  if (score >= 70) return { stroke: "#f43f5e", text: "text-rose-600",   label: "High Risk",   bg: "bg-rose-50",   ring: "ring-rose-200"   }
-  if (score >= 40) return { stroke: "#f59e0b", text: "text-amber-600",  label: "Medium Risk", bg: "bg-amber-50",  ring: "ring-amber-200"  }
-  return              { stroke: "#10b981", text: "text-emerald-600", label: "Low Risk",    bg: "bg-emerald-50",ring: "ring-emerald-200" }
+  if (score >= 70) return { stroke: "#f43f5e", text: "text-rose-400",   label: "High Risk",   bg: "bg-rose-500/10",   ring: "ring-rose-500/20"   }
+  if (score >= 40) return { stroke: "#f59e0b", text: "text-amber-400",  label: "Medium Risk", bg: "bg-amber-500/10",  ring: "ring-amber-500/20"  }
+  return              { stroke: "#10b981", text: "text-emerald-400", label: "Low Risk",    bg: "bg-emerald-500/10",ring: "ring-emerald-500/20" }
 }
 
 function RiskRing({ score }: { score: number }) {
@@ -115,10 +115,10 @@ function RiskRing({ score }: { score: number }) {
 }
 
 const EVENT_ICON: Record<PaymentEvent["type"], React.ReactNode> = {
-  issued:   <div className="w-7 h-7 rounded-full bg-indigo-100  flex items-center justify-center"><CalendarDays className="w-3.5 h-3.5 text-primary" /></div>,
-  reminder: <div className="w-7 h-7 rounded-full bg-amber-100   flex items-center justify-center"><Clock         className="w-3.5 h-3.5 text-amber-600" /></div>,
-  overdue:  <div className="w-7 h-7 rounded-full bg-rose-100    flex items-center justify-center"><AlertTriangle  className="w-3.5 h-3.5 text-rose-600" /></div>,
-  paid:     <div className="w-7 h-7 rounded-full bg-emerald-100 flex items-center justify-center"><ShieldCheck    className="w-3.5 h-3.5 text-emerald-600" /></div>,
+  issued:   <div className="w-7 h-7 rounded-full bg-muted      flex items-center justify-center"><CalendarDays className="w-3.5 h-3.5 text-foreground" /></div>,
+  reminder: <div className="w-7 h-7 rounded-full bg-amber-500/10   flex items-center justify-center"><Clock         className="w-3.5 h-3.5 text-amber-400" /></div>,
+  overdue:  <div className="w-7 h-7 rounded-full bg-rose-500/10    flex items-center justify-center"><AlertTriangle  className="w-3.5 h-3.5 text-rose-400" /></div>,
+  paid:     <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center"><ShieldCheck    className="w-3.5 h-3.5 text-emerald-400" /></div>,
 }
 
 const DRAFT_EMAIL = {
@@ -209,7 +209,7 @@ export default function InvoiceDetailPage() {
             {status !== "Paid" && (
               <button
                 onClick={() => setMarkPaidOpen(v => !v)}
-                className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 transition-colors"
+                className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-500 text-emerald-950 hover:bg-emerald-400 transition-colors"
               >
                 <CheckCircle className="w-4 h-4" />
                 Mark as Paid
@@ -232,7 +232,7 @@ export default function InvoiceDetailPage() {
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Due Date</p>
-            <p className="font-semibold text-rose-600">{INVOICE.dueDate}</p>
+            <p className="font-semibold text-rose-400">{INVOICE.dueDate}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Currency</p>
@@ -243,29 +243,29 @@ export default function InvoiceDetailPage() {
 
       {/* Mark as Paid panel */}
       {markPaidOpen && (
-        <div className="bg-emerald-50 rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-end gap-4" style={{ border: "1px solid #bbf7d0" }}>
+        <div className="bg-emerald-500/10 rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-end gap-4" style={{ border: "1px solid rgba(16,185,129,0.2)" }}>
           <div className="flex-1">
-            <p className="text-sm font-semibold text-emerald-800 mb-2">Confirm payment received</p>
-            <label className="block text-xs text-emerald-700 mb-1">Date payment received</label>
+            <p className="text-sm font-semibold text-emerald-400 mb-2">Confirm payment received</p>
+            <label className="block text-xs text-emerald-400/80 mb-1">Date payment received</label>
             <input
               type="date"
               value={paidDate}
               onChange={e => setPaidDate(e.target.value)}
-              className="h-9 px-3 rounded-lg text-sm bg-white text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400/50 transition-shadow"
-              style={{ border: "1px solid #86efac" }}
+              className="h-9 px-3 rounded-lg text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-shadow"
+              style={{ border: "1px solid rgba(16,185,129,0.25)" }}
             />
           </div>
           <div className="flex gap-2">
             <button
               onClick={() => setMarkPaidOpen(false)}
-              className="h-9 px-4 rounded-lg text-sm font-medium border border-emerald-200 text-emerald-700 bg-white hover:bg-emerald-50 transition-colors"
+              className="h-9 px-4 rounded-lg text-sm font-medium border border-border text-muted-foreground bg-card hover:bg-muted transition-colors"
             >
               Cancel
             </button>
             <button
               onClick={confirmPaid}
               disabled={!paidDate}
-              className="h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-600 text-white hover:bg-emerald-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+              className="h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-500 text-emerald-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
               Confirm
             </button>
@@ -285,7 +285,7 @@ export default function InvoiceDetailPage() {
               <button
                 onClick={() => setEditingEmail(v => !v)}
                 className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors ${
-                  editingEmail ? "bg-primary text-white" : "border border-border text-muted-foreground hover:bg-muted"
+                  editingEmail ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:bg-muted"
                 }`}
               >
                 <Pencil className="w-3 h-3" />
@@ -295,7 +295,7 @@ export default function InvoiceDetailPage() {
                 onClick={copyEmail}
                 className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
               >
-                {copied ? <Check className="w-3 h-3 text-emerald-600" /> : <Copy className="w-3 h-3" />}
+                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
                 {copied ? "Copied!" : "Copy"}
               </button>
               <button
@@ -318,7 +318,7 @@ export default function InvoiceDetailPage() {
                   value={emailBody}
                   onChange={e => setEmailBody(e.target.value)}
                   rows={12}
-                  className="w-full text-sm text-foreground bg-muted/40 rounded-lg px-4 py-3 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+                  className="w-full text-sm text-foreground bg-muted/40 rounded-lg px-4 py-3 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
                   style={{ border: "1px solid var(--border)" }}
                 />
               ) : (

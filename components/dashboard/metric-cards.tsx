@@ -29,9 +29,9 @@ const METRICS: Metric[] = [
     trend: "up",
     trendLabel: "+$1,400 vs last month",
     icon: AlertTriangle,
-    iconColor: "text-rose-500",
-    iconBg: "bg-rose-50",
-    valueColor: "text-rose-600",
+    iconColor: "text-rose-400",
+    iconBg: "bg-rose-500/10",
+    valueColor: "text-rose-400",
   },
   {
     label: "Paid This Month",
@@ -39,9 +39,9 @@ const METRICS: Metric[] = [
     trend: "up",
     trendLabel: "+22% vs last month",
     icon: CheckCircle,
-    iconColor: "text-emerald-600",
-    iconBg: "bg-emerald-50",
-    valueColor: "text-emerald-700",
+    iconColor: "text-emerald-400",
+    iconBg: "bg-emerald-500/10",
+    valueColor: "text-emerald-400",
   },
   {
     label: "At-Risk Invoices",
@@ -49,9 +49,9 @@ const METRICS: Metric[] = [
     trend: "down",
     trendLabel: "Down from 5 last month",
     icon: FileWarning,
-    iconColor: "text-amber-600",
-    iconBg: "bg-amber-50",
-    valueColor: "text-amber-700",
+    iconColor: "text-amber-400",
+    iconBg: "bg-amber-500/10",
+    valueColor: "text-amber-400",
   },
 ]
 
@@ -63,11 +63,11 @@ export function MetricCards() {
         const TrendIcon = m.trend === "up" ? TrendingUp : m.trend === "down" ? TrendingDown : null
         const trendColor =
           m.label === "Overdue"
-            ? "text-rose-500"
+            ? "text-rose-400"
             : m.trend === "up"
-            ? "text-emerald-600"
+            ? "text-emerald-400"
             : m.trend === "down"
-            ? "text-amber-600"
+            ? "text-amber-400"
             : "text-muted-foreground"
 
         return (

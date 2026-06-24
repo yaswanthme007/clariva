@@ -104,7 +104,7 @@ export function CashFlowChart() {
             {DATA.map((entry) => (
               <Cell
                 key={entry.week}
-                fill={entry.week === CURRENT_WEEK ? "#4f46e5" : "rgba(79,70,229,0.25)"}
+                fill={entry.week === CURRENT_WEEK ? "#fafafa" : "rgba(250,250,250,0.25)"}
               />
             ))}
           </Bar>

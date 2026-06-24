@@ -88,7 +88,7 @@ export default function LoginPage() {
                 </label>
                 <Link
                   href="#"
-                  className="text-xs text-primary hover:text-indigo-700 transition-colors"
+                  className="text-xs text-primary hover:text-foreground transition-colors"
                 >
                   Forgot password?
                 </Link>
@@ -119,7 +119,7 @@ export default function LoginPage() {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-rose-600 bg-rose-50" style={{ border: "1px solid #ffe4e6" }}>
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {error}
               </div>
@@ -128,7 +128,7 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-indigo-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
             >
               Sign in
             </button>
@@ -138,7 +138,7 @@ export default function LoginPage() {
         {/* Footer link */}
         <p className="text-center text-sm text-muted-foreground mt-5">
           {"Don't have an account? "}
-          <Link href="/register" className="font-medium text-primary hover:text-indigo-700 transition-colors">
+          <Link href="/register" className="font-medium text-primary hover:text-foreground transition-colors">
             Sign up
           </Link>
         </p>

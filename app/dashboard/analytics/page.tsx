@@ -241,7 +241,7 @@ export default function AnalyticsPage() {
                 }
               />
               <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8 }} />
-              <Line type="monotone" dataKey="expected" name="Expected" stroke="#4f46e5" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              <Line type="monotone" dataKey="expected" name="Expected" stroke="#fafafa" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               <Line type="monotone" dataKey="actual" name="Actual" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
             </LineChart>
           </ResponsiveContainer>
@@ -311,7 +311,7 @@ export default function AnalyticsPage() {
                   ) : null
                 }
               />
-              <Bar dataKey="revenue" fill="#4f46e5" radius={[0, 5, 5, 0]} barSize={22} />
+              <Bar dataKey="revenue" fill="#fafafa" radius={[0, 5, 5, 0]} barSize={22} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>

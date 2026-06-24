@@ -30,7 +30,7 @@ export function Sidebar() {
       {/* Logo */}
       <div className="flex items-center gap-2.5 px-5 h-16 shrink-0" style={{ borderBottom: "1px solid var(--border)" }}>
         <div className="flex items-center justify-center w-7 h-7 rounded-lg bg-primary shrink-0">
-          <Zap className="w-3.5 h-3.5 text-white" strokeWidth={2.5} />
+          <Zap className="w-3.5 h-3.5 text-primary-foreground" strokeWidth={2.5} />
         </div>
         <span className="text-base font-bold tracking-tight text-foreground">Clariva</span>
       </div>
@@ -45,10 +45,10 @@ export function Sidebar() {
               href={href}
               onClick={() => setMobileOpen(false)}
               className={[
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150",
+                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-150 border-l-2",
                 active
-                  ? "bg-primary text-white"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground",
+                  ? "bg-muted text-foreground border-foreground"
+                  : "border-transparent text-muted-foreground hover:bg-muted hover:text-foreground",
               ].join(" ")}
               aria-current={active ? "page" : undefined}
             >
@@ -98,7 +98,7 @@ export function Sidebar() {
       >
         <div className="flex items-center gap-2">
           <div className="flex items-center justify-center w-6 h-6 rounded-md bg-primary">
-            <Zap className="w-3 h-3 text-white" strokeWidth={2.5} />
+            <Zap className="w-3 h-3 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <span className="text-sm font-bold tracking-tight text-foreground">Clariva</span>
         </div>

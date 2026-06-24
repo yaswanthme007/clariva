@@ -16,7 +16,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <button
-          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-indigo-700 active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-gray-100 active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
           <span className="hidden sm:inline">New Invoice</span>

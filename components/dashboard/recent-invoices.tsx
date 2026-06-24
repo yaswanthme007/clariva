@@ -25,15 +25,15 @@ const INVOICES: Invoice[] = [
 ]
 
 const STATUS_STYLES: Record<Status, string> = {
-  Paid:    "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  Pending: "bg-amber-50   text-amber-700   ring-amber-200",
-  Overdue: "bg-rose-50    text-rose-700    ring-rose-200",
+  Paid:    "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
+  Pending: "bg-amber-500/10   text-amber-400   ring-amber-500/20",
+  Overdue: "bg-rose-500/10    text-rose-400    ring-rose-500/20",
 }
 
 const RISK_STYLES: Record<Risk, string> = {
-  Low:    "bg-emerald-50 text-emerald-700 ring-emerald-200",
-  Medium: "bg-amber-50   text-amber-700   ring-amber-200",
-  High:   "bg-rose-50    text-rose-700    ring-rose-200",
+  Low:    "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
+  Medium: "bg-amber-500/10   text-amber-400   ring-amber-500/20",
+  High:   "bg-rose-500/10    text-rose-400    ring-rose-500/20",
 }
 
 const RISK_DOT: Record<Risk, string> = {
@@ -75,7 +75,7 @@ export function RecentInvoices() {
           <h2 className="text-base font-semibold text-foreground">Recent Invoices</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Your latest 7 invoices</p>
         </div>
-        <button className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-indigo-700 transition-colors">
+        <button className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-foreground transition-colors">
           View all
           <ArrowUpRight className="w-4 h-4" />
         </button>

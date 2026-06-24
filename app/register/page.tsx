@@ -33,7 +33,7 @@ function PasswordStrength({ password }: { password: string }) {
 
   const label = ["Too short", "Weak", "Fair", "Good", "Strong"][score]
   const colors = ["bg-rose-500", "bg-rose-500", "bg-amber-500", "bg-amber-500", "bg-emerald-500"]
-  const textColors = ["text-rose-600", "text-rose-600", "text-amber-600", "text-amber-600", "text-emerald-600"]
+  const textColors = ["text-rose-400", "text-rose-400", "text-amber-400", "text-amber-400", "text-emerald-400"]
 
   return (
     <div className="flex items-center gap-2 mt-1.5">
@@ -97,7 +97,7 @@ export default function RegisterPage() {
         <div style={{
           width: "700px",
           height: "500px",
-          background: "radial-gradient(ellipse at center, rgba(79,70,229,0.06) 0%, transparent 70%)",
+          background: "radial-gradient(ellipse at center, rgba(255,255,255,0.05) 0%, transparent 70%)",
         }} />
       </div>
 
@@ -106,7 +106,7 @@ export default function RegisterPage() {
         {/* Logo */}
         <Link href="/" className="flex items-center justify-center gap-2 mb-8">
           <div className="flex items-center justify-center w-8 h-8 rounded-lg bg-primary">
-            <Zap className="w-4 h-4 text-white" strokeWidth={2.5} />
+            <Zap className="w-4 h-4 text-primary-foreground" strokeWidth={2.5} />
           </div>
           <span className="text-xl font-bold tracking-tight text-foreground">
             Clariva
@@ -141,7 +141,7 @@ export default function RegisterPage() {
                 placeholder="Jane Smith"
                 value={form.fullName}
                 onChange={set("fullName")}
-                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                 style={{ border: "1px solid var(--border)" }}
               />
             </div>
@@ -158,7 +158,7 @@ export default function RegisterPage() {
                 placeholder="you@company.com"
                 value={form.email}
                 onChange={set("email")}
-                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                 style={{ border: "1px solid var(--border)" }}
               />
             </div>
@@ -175,7 +175,7 @@ export default function RegisterPage() {
                 placeholder="Acme Studio"
                 value={form.businessName}
                 onChange={set("businessName")}
-                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                className="w-full h-10 rounded-lg px-3 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                 style={{ border: "1px solid var(--border)" }}
               />
             </div>
@@ -193,7 +193,7 @@ export default function RegisterPage() {
                   placeholder="Min. 8 characters"
                   value={form.password}
                   onChange={set("password")}
-                  className="w-full h-10 rounded-lg px-3 pr-10 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                  className="w-full h-10 rounded-lg px-3 pr-10 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                   style={{ border: "1px solid var(--border)" }}
                 />
                 <button
@@ -221,7 +221,7 @@ export default function RegisterPage() {
                   placeholder="Re-enter your password"
                   value={form.confirmPassword}
                   onChange={set("confirmPassword")}
-                  className="w-full h-10 rounded-lg px-3 pr-10 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-primary/30"
+                  className="w-full h-10 rounded-lg px-3 pr-10 text-sm bg-background text-foreground placeholder:text-muted-foreground outline-none transition-all focus:ring-2 focus:ring-white/20"
                   style={{ border: "1px solid var(--border)" }}
                 />
                 <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1">
@@ -242,7 +242,7 @@ export default function RegisterPage() {
 
             {/* Error */}
             {error && (
-              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-rose-600 bg-rose-50" style={{ border: "1px solid #ffe4e6" }}>
+              <div className="flex items-center gap-2 rounded-lg px-3 py-2.5 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
                 <AlertCircle className="w-4 h-4 shrink-0" />
                 {error}
               </div>
@@ -251,7 +251,7 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-indigo-700 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/50"
+              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
             >
               Create account
             </button>
@@ -270,7 +270,7 @@ export default function RegisterPage() {
         {/* Footer link */}
         <p className="text-center text-sm text-muted-foreground mt-5">
           Already have an account?{" "}
-          <Link href="/login" className="font-medium text-primary hover:text-indigo-700 transition-colors">
+          <Link href="/login" className="font-medium text-primary hover:text-foreground transition-colors">
             Log in
           </Link>
         </p>

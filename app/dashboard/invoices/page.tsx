@@ -62,9 +62,9 @@ const fmt = (n: number) =>
   "$" + n.toLocaleString("en-US")
 
 const STATUS_BADGE: Record<Status, string> = {
-  Paid:    "bg-emerald-50 text-emerald-700 ring-1 ring-inset ring-emerald-200",
-  Pending: "bg-amber-50   text-amber-700   ring-1 ring-inset ring-amber-200",
-  Overdue: "bg-rose-50    text-rose-700    ring-1 ring-inset ring-rose-200",
+  Paid:    "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20",
+  Pending: "bg-amber-500/10   text-amber-400   ring-1 ring-inset ring-amber-500/20",
+  Overdue: "bg-rose-500/10    text-rose-400    ring-1 ring-inset ring-rose-500/20",
 }
 
 const RISK_BAR: Record<Risk, string> = {
@@ -144,7 +144,7 @@ export default function InvoicesPage() {
         </div>
         <Link
           href="/dashboard/invoices/new"
-          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-indigo-700 active:scale-[0.98]"
+          className="flex items-center gap-2 h-9 px-4 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-gray-100 active:scale-[0.98]"
         >
           <Plus className="w-4 h-4" strokeWidth={2.5} />
           <span className="hidden sm:inline">New Invoice</span>
@@ -162,7 +162,7 @@ export default function InvoicesPage() {
             placeholder="Search invoices or clients…"
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
-            className="w-full h-9 pl-9 pr-3 rounded-lg text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/30 transition-shadow"
+            className="w-full h-9 pl-9 pr-3 rounded-lg text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
             style={{ border: "1px solid var(--border)" }}
           />
         </div>
@@ -252,19 +252,19 @@ export default function InvoicesPage() {
                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                       <button
                         title="View"
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-primary hover:bg-primary/8 transition-colors"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
                       >
                         <Eye className="w-3.5 h-3.5" />
                       </button>
                       <button
                         title="Mark Paid"
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-emerald-600 hover:bg-emerald-50 transition-colors"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-emerald-400 hover:bg-emerald-500/10 transition-colors"
                       >
                         <CheckCircle className="w-3.5 h-3.5" />
                       </button>
                       <button
                         title="Delete"
-                        className="p-1.5 rounded-md text-muted-foreground hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                        className="p-1.5 rounded-md text-muted-foreground hover:text-rose-400 hover:bg-rose-500/10 transition-colors"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -300,7 +300,7 @@ export default function InvoicesPage() {
                 <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-muted-foreground border border-border hover:bg-muted transition-colors">
                   <Eye className="w-3 h-3" /> View
                 </button>
-                <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-700 border border-emerald-200 bg-emerald-50 hover:bg-emerald-100 transition-colors">
+                <button className="flex items-center gap-1.5 px-2.5 py-1 rounded-md text-xs font-medium text-emerald-400 border border-emerald-500/20 bg-emerald-500/10 hover:bg-emerald-500/20 transition-colors">
                   <CheckCircle className="w-3 h-3" /> Mark Paid
                 </button>
               </div>
@@ -338,7 +338,7 @@ export default function InvoicesPage() {
                   onClick={() => setPage(n)}
                   className={`w-7 h-7 rounded-md text-xs font-medium transition-colors ${
                     n === page
-                      ? "bg-primary text-white"
+                      ? "bg-primary text-primary-foreground"
                       : "text-muted-foreground hover:bg-muted"
                   }`}
                 >
