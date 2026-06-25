@@ -3,21 +3,37 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Eye, EyeOff, Zap, AlertCircle } from "lucide-react"
+import { signIn } from "next-auth/react"
+import { useRouter } from "next/navigation"
 
 export default function LoginPage() {
+  const router = useRouter()
   const [showPassword, setShowPassword] = useState(false)
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     if (!email || !password) {
       setError("Please fill in all fields.")
       return
     }
     setError("")
-    // Backend logic goes here
+    setLoading(true)
+    try {
+      const result = await signIn("credentials", { email, password, redirect: false })
+      if (result?.error) {
+        setError("Invalid email or password.")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   return (
@@ -128,9 +144,10 @@ export default function LoginPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+              disabled={loading}
+              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Sign in
+              {loading ? "Signing in…" : "Sign in"}
             </button>
           </form>
         </div>

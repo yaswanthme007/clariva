@@ -3,6 +3,7 @@
 import Link from "next/link"
 import { useState } from "react"
 import { Eye, EyeOff, Zap, AlertCircle, CheckCircle2 } from "lucide-react"
+import { useRouter } from "next/navigation"
 
 interface FormState {
   fullName: string
@@ -51,10 +52,12 @@ function PasswordStrength({ password }: { password: string }) {
 }
 
 export default function RegisterPage() {
+  const router = useRouter()
   const [form, setForm] = useState<FormState>(INITIAL)
   const [showPassword, setShowPassword] = useState(false)
   const [showConfirm, setShowConfirm] = useState(false)
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(false)
 
   function set(field: keyof FormState) {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -63,7 +66,7 @@ export default function RegisterPage() {
     }
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     const { fullName, email, businessName, password, confirmPassword } = form
 
@@ -80,7 +83,24 @@ export default function RegisterPage() {
       return
     }
     setError("")
-    // Backend logic goes here
+    setLoading(true)
+    try {
+      const res = await fetch("/api/register", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ fullName, email, businessName, password }),
+      })
+      if (res.ok) {
+        router.push("/login")
+      } else {
+        const data = await res.json()
+        setError(data.error ?? "Registration failed. Please try again.")
+      }
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+    }
   }
 
   const passwordsMatch =
@@ -251,9 +271,10 @@ export default function RegisterPage() {
             {/* Submit */}
             <button
               type="submit"
-              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20"
+              disabled={loading}
+              className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              Create account
+              {loading ? "Creating account…" : "Create account"}
             </button>
 
             {/* Terms */}

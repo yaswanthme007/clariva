@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState } from "react"
+import { use, useMemo, useState, useEffect } from "react"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -27,6 +27,7 @@ import {
 
 interface ClientInvoice {
   id: string
+  dbId: string
   amount: number
   issueDate: string
   dueDate: string
@@ -40,7 +41,6 @@ interface ClientRecord {
   company: string
   email: string
   phone: string
-  industry: string
   reliabilityScore: number
   avgDaysToPay: number
   daysTrend: "up" | "down" | "flat"
@@ -48,50 +48,64 @@ interface ClientRecord {
   totalInvoiced: number
   outstanding: number
   invoiceCount: number
+  onTimeCount: number
+  paidCount: number
   monthly: { month: string; days: number }[]
   invoices: ClientInvoice[]
-}
-
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
-const DEFAULT_CLIENT: ClientRecord = {
-  id: "c4",
-  name: "Sam Whitaker",
-  company: "Apex Solutions",
-  email: "s.whitaker@apexsol.com",
-  phone: "+1 (415) 555-0182",
-  industry: "Software",
-  reliabilityScore: 84,
-  avgDaysToPay: 6,
-  daysTrend: "down",
-  trendDelta: "2 days faster vs last quarter",
-  totalInvoiced: 88200,
-  outstanding: 12400,
-  invoiceCount: 15,
-  monthly: [
-    { month: "Jan", days: 11 },
-    { month: "Feb", days: 9 },
-    { month: "Mar", days: 8 },
-    { month: "Apr", days: 10 },
-    { month: "May", days: 6 },
-    { month: "Jun", days: 5 },
-    { month: "Jul", days: 4 },
-  ],
-  invoices: [
-    { id: "INV-0182", amount: 6400, issueDate: "Jul 2, 2026",  dueDate: "Aug 1, 2026",  status: "Pending", risk: "Low" },
-    { id: "INV-0175", amount: 6000, issueDate: "Jun 18, 2026", dueDate: "Jul 18, 2026", status: "Pending", risk: "Medium" },
-    { id: "INV-0168", amount: 8200, issueDate: "Jun 1, 2026",  dueDate: "Jul 1, 2026",  status: "Paid",    risk: "Low" },
-    { id: "INV-0160", amount: 4500, issueDate: "May 15, 2026", dueDate: "Jun 14, 2026", status: "Paid",    risk: "Low" },
-    { id: "INV-0151", amount: 9100, issueDate: "Apr 28, 2026", dueDate: "May 28, 2026", status: "Paid",    risk: "Low" },
-    { id: "INV-0143", amount: 5300, issueDate: "Apr 10, 2026", dueDate: "May 10, 2026", status: "Overdue", risk: "High" },
-    { id: "INV-0137", amount: 7200, issueDate: "Mar 22, 2026", dueDate: "Apr 21, 2026", status: "Paid",    risk: "Medium" },
-  ],
 }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+function formatDate(d: string | Date): string {
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseClientRecord(r: any): ClientRecord {
+  const avgDays = Number(r.avg_payment_days ?? 0)
+  const daysTrend: ClientRecord["daysTrend"] = avgDays <= 7 ? "down" : avgDays > 15 ? "up" : "flat"
+  const trendDelta =
+    avgDays === 0 ? "No payment history yet"
+    : avgDays <= 7 ? "Pays consistently on time"
+    : `Averages ${avgDays} days to pay`
+
+  return {
+    id:               r.id,
+    name:             r.name,
+    company:          r.name,
+    email:            r.email ?? "",
+    phone:            r.phone ?? "—",
+    reliabilityScore: Number(r.payment_score ?? 100),
+    avgDaysToPay:     avgDays,
+    daysTrend,
+    trendDelta,
+    totalInvoiced:    Number(r.total_invoiced ?? 0),
+    outstanding:      Number(r.outstanding ?? 0),
+    invoiceCount:     Number(r.invoice_count ?? 0),
+    onTimeCount:      Number(r.on_time_count ?? 0),
+    paidCount:        Number(r.total_paid_count ?? 0),
+    monthly:          (r.monthly ?? []).map((m: { month: string; days: number }) => ({
+      month: m.month,
+      days: Number(m.days),
+    })),
+    invoices: (r.invoices ?? []).map((inv: Record<string, unknown>) => ({
+      id:        inv.invoice_number as string,
+      dbId:      inv.id as string,
+      amount:    Number(inv.amount),
+      issueDate: formatDate(inv.issue_date as string),
+      dueDate:   formatDate(inv.due_date as string),
+      status:    capitalize(inv.status as string) as ClientInvoice["status"],
+      risk:      ((inv.risk_label as string) ?? "Low") as ClientInvoice["risk"],
+    })),
+  }
+}
 
 function scoreStyle(score: number) {
   if (score >= 70) return { stroke: "#10b981", track: "rgba(255,255,255,0.08)", label: "Reliable", textCls: "text-emerald-400", bgCls: "bg-emerald-500/10", ringCls: "ring-emerald-500/20" }
@@ -169,15 +183,52 @@ function DaysTooltip({ active, payload, label }: { active?: boolean; payload?: {
 
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
-  const client = useMemo<ClientRecord>(() => ({ ...DEFAULT_CLIENT, id }), [id])
-  const [search, setSearch] = useState("")
+
+  const [client, setClient]   = useState<ClientRecord | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [search, setSearch]   = useState("")
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/clients/${id}`)
+        if (!res.ok) return
+        const { client: raw } = await res.json()
+        setClient(parseClientRecord(raw))
+      } finally {
+        setLoading(false)
+      }
+    }
+    if (id) load()
+  }, [id])
 
   const filteredInvoices = useMemo(
-    () => client.invoices.filter(inv => !search || inv.id.toLowerCase().includes(search.toLowerCase())),
-    [client.invoices, search]
+    () => (client?.invoices ?? []).filter(inv => !search || inv.id.toLowerCase().includes(search.toLowerCase())),
+    [client, search]
   )
 
-  const initials = client.name.split(" ").map(n => n[0]).join("").slice(0, 2)
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-full p-8 pt-20 md:pt-8">
+        <p className="text-muted-foreground text-sm">Loading client…</p>
+      </div>
+    )
+  }
+
+  if (!client) {
+    return (
+      <div className="flex flex-col gap-4 p-8 pt-20 md:pt-8">
+        <Link href="/dashboard/clients" className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors w-fit">
+          <ArrowLeft className="w-4 h-4" /> Back to Clients
+        </Link>
+        <p className="text-muted-foreground">Client not found.</p>
+      </div>
+    )
+  }
+
+  const initials = client.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()
+  const onTimeRate = client.paidCount > 0 ? Math.round(client.onTimeCount / client.paidCount * 100) : null
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full">
@@ -197,9 +248,11 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <div className="flex-1 min-w-0">
             <h1 className="text-2xl font-bold tracking-tight text-foreground">{client.name}</h1>
             <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 mt-2 text-sm text-muted-foreground">
-              <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4" />{client.company} · {client.industry}</span>
+              <span className="flex items-center gap-1.5"><Building2 className="w-4 h-4" />{client.company}</span>
               <span className="flex items-center gap-1.5"><Mail className="w-4 h-4" />{client.email}</span>
-              <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" />{client.phone}</span>
+              {client.phone !== "—" && (
+                <span className="flex items-center gap-1.5"><Phone className="w-4 h-4" />{client.phone}</span>
+              )}
             </div>
           </div>
           <a
@@ -224,7 +277,9 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         <div className="lg:col-span-2 grid grid-cols-2 gap-4">
           <div className="bg-card rounded-xl px-6 py-5 flex flex-col justify-center" style={{ border: "1px solid var(--border)" }}>
             <p className="text-xs text-muted-foreground mb-1">Average Days to Pay</p>
-            <p className="text-3xl font-bold text-foreground tabular-nums">{client.avgDaysToPay}<span className="text-lg text-muted-foreground"> days</span></p>
+            <p className="text-3xl font-bold text-foreground tabular-nums">
+              {client.avgDaysToPay}<span className="text-lg text-muted-foreground"> days</span>
+            </p>
             <div className="flex items-center gap-1.5 mt-2">
               {TREND_ICON[client.daysTrend]}
               <span className="text-xs text-muted-foreground">{client.trendDelta}</span>
@@ -244,8 +299,14 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           </div>
           <div className="bg-card rounded-xl px-6 py-5 flex flex-col justify-center" style={{ border: "1px solid var(--border)" }}>
             <p className="text-xs text-muted-foreground mb-1">On-Time Rate</p>
-            <p className="text-3xl font-bold text-emerald-400 tabular-nums">87%</p>
-            <p className="text-xs text-muted-foreground mt-2">13 of 15 paid on time</p>
+            <p className="text-3xl font-bold text-emerald-400 tabular-nums">
+              {onTimeRate !== null ? `${onTimeRate}%` : "N/A"}
+            </p>
+            <p className="text-xs text-muted-foreground mt-2">
+              {client.paidCount > 0
+                ? `${client.onTimeCount} of ${client.paidCount} paid on time`
+                : "No paid invoices yet"}
+            </p>
           </div>
         </div>
       </div>
@@ -256,19 +317,23 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <h2 className="text-base font-semibold text-foreground">Average Days to Pay</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Monthly trend over the last 7 months</p>
         </div>
-        <ResponsiveContainer width="100%" height={240}>
-          <BarChart data={client.monthly} barCategoryGap="28%">
-            <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
-            <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} dy={8} />
-            <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={v => `${v}d`} width={36} />
-            <Tooltip content={<DaysTooltip />} cursor={{ fill: "var(--muted)" }} />
-            <Bar dataKey="days" radius={[5, 5, 0, 0]}>
-              {client.monthly.map(entry => (
-                <Cell key={entry.month} fill={entry.days > 10 ? "#f43f5e" : entry.days > 7 ? "#f59e0b" : "#10b981"} />
-              ))}
-            </Bar>
-          </BarChart>
-        </ResponsiveContainer>
+        {client.monthly.length === 0 ? (
+          <p className="text-sm text-muted-foreground py-16 text-center">No payment data yet.</p>
+        ) : (
+          <ResponsiveContainer width="100%" height={240}>
+            <BarChart data={client.monthly} barCategoryGap="28%">
+              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
+              <XAxis dataKey="month" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} dy={8} />
+              <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={v => `${v}d`} width={36} />
+              <Tooltip content={<DaysTooltip />} cursor={{ fill: "var(--muted)" }} />
+              <Bar dataKey="days" radius={[5, 5, 0, 0]}>
+                {client.monthly.map(entry => (
+                  <Cell key={entry.month} fill={entry.days > 10 ? "#f43f5e" : entry.days > 7 ? "#f59e0b" : "#10b981"} />
+                ))}
+              </Bar>
+            </BarChart>
+          </ResponsiveContainer>
+        )}
         <p className="text-xs text-muted-foreground mt-4">
           Color reflects speed: <span className="text-emerald-400 font-medium">green ≤7d</span> · <span className="text-amber-400 font-medium">amber 8–10d</span> · <span className="text-rose-400 font-medium">red &gt;10d</span>
         </p>
@@ -303,8 +368,10 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
               </tr>
             </thead>
             <tbody>
-              {filteredInvoices.map(inv => (
-                <tr key={inv.id} className="hover:bg-muted/40 transition-colors" style={{ borderBottom: "1px solid var(--border)" }}>
+              {filteredInvoices.length === 0 ? (
+                <tr><td colSpan={7} className="px-6 py-12 text-center text-sm text-muted-foreground">No invoices found.</td></tr>
+              ) : filteredInvoices.map(inv => (
+                <tr key={inv.dbId} className="hover:bg-muted/40 transition-colors" style={{ borderBottom: "1px solid var(--border)" }}>
                   <td className="px-6 py-3.5 font-medium text-foreground">{inv.id}</td>
                   <td className="px-6 py-3.5 text-foreground tabular-nums">{fmt(inv.amount)}</td>
                   <td className="px-6 py-3.5 text-muted-foreground">{inv.issueDate}</td>
@@ -316,7 +383,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
                     <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ring-1 ring-inset ${RISK_STYLE[inv.risk]}`}>{inv.risk}</span>
                   </td>
                   <td className="px-6 py-3.5 text-right">
-                    <Link href={`/dashboard/invoices/${inv.id}`} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
+                    <Link href={`/dashboard/invoices/${inv.dbId}`} className="inline-flex items-center gap-1 text-xs font-medium text-primary hover:underline">
                       View <ExternalLink className="w-3 h-3" />
                     </Link>
                   </td>
@@ -329,7 +396,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
         {/* Mobile cards */}
         <div className="sm:hidden divide-y" style={{ borderColor: "var(--border)" }}>
           {filteredInvoices.map(inv => (
-            <div key={inv.id} className="px-6 py-4 flex flex-col gap-2">
+            <div key={inv.dbId} className="px-6 py-4 flex flex-col gap-2">
               <div className="flex items-center justify-between">
                 <span className="font-medium text-foreground">{inv.id}</span>
                 <span className="text-foreground tabular-nums font-semibold">{fmt(inv.amount)}</span>
@@ -345,7 +412,7 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           ))}
         </div>
 
-        {filteredInvoices.length === 0 && (
+        {filteredInvoices.length === 0 && client.invoices.length > 0 && (
           <div className="px-6 py-12 text-center text-sm text-muted-foreground">No invoices match your search.</div>
         )}
       </div>

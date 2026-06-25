@@ -1,6 +1,7 @@
 "use client"
 
-import { useState, useMemo } from "react"
+import { useState, useMemo, useEffect, useCallback } from "react"
+import { useRouter } from "next/navigation"
 import {
   Plus,
   Search,
@@ -14,11 +15,10 @@ import {
 // ─── Types ────────────────────────────────────────────────────────────────────
 
 interface Client {
-  id: string
+  dbId: string
   name: string
   company: string
   email: string
-  industry: string
   reliabilityScore: number
   totalInvoiced: number
   outstanding: number
@@ -27,63 +27,28 @@ interface Client {
   trend: "up" | "down" | "flat"
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
-const CLIENTS: Client[] = [
-  {
-    id: "c1",  name: "Alex Torres",    company: "Meridian Co.",      email: "atorres@meridian.co",      industry: "Consulting",
-    reliabilityScore: 22,  totalInvoiced: 42500,  outstanding: 8750,  invoiceCount: 7,  avgDaysLate: 18, trend: "down",
-  },
-  {
-    id: "c2",  name: "Priya Nair",     company: "Bright Labs",       email: "p.nair@brightlabs.io",     industry: "Technology",
-    reliabilityScore: 91,  totalInvoiced: 61000,  outstanding: 0,     invoiceCount: 12, avgDaysLate: 1,  trend: "up",
-  },
-  {
-    id: "c3",  name: "Jordan Cole",   company: "Foxwood Creative",  email: "jcole@foxwoodcreative.com", industry: "Design",
-    reliabilityScore: 58,  totalInvoiced: 23400,  outstanding: 1950,  invoiceCount: 6,  avgDaysLate: 9,  trend: "flat",
-  },
-  {
-    id: "c4",  name: "Sam Whitaker",  company: "Apex Solutions",    email: "s.whitaker@apexsol.com",   industry: "Software",
-    reliabilityScore: 84,  totalInvoiced: 88200,  outstanding: 12400, invoiceCount: 15, avgDaysLate: 3,  trend: "up",
-  },
-  {
-    id: "c5",  name: "Dana Reyes",    company: "Harbor Consulting",  email: "dreyes@harborcg.com",      industry: "Finance",
-    reliabilityScore: 17,  totalInvoiced: 19800,  outstanding: 3300,  invoiceCount: 5,  avgDaysLate: 24, trend: "down",
-  },
-  {
-    id: "c6",  name: "Morgan Liu",    company: "Orion Media",        email: "morgan@orionmedia.co",     industry: "Media",
-    reliabilityScore: 63,  totalInvoiced: 31000,  outstanding: 6600,  invoiceCount: 8,  avgDaysLate: 7,  trend: "up",
-  },
-  {
-    id: "c7",  name: "Casey Park",    company: "Starside Digital",   email: "cpark@starside.io",        industry: "Marketing",
-    reliabilityScore: 96,  totalInvoiced: 27500,  outstanding: 0,     invoiceCount: 9,  avgDaysLate: 0,  trend: "up",
-  },
-  {
-    id: "c8",  name: "Riley Novak",   company: "Vantage Partners",   email: "r.novak@vantagep.com",     industry: "Consulting",
-    reliabilityScore: 79,  totalInvoiced: 54600,  outstanding: 0,     invoiceCount: 11, avgDaysLate: 4,  trend: "flat",
-  },
-  {
-    id: "c9",  name: "Taylor Brooks", company: "Summit Tech",        email: "tbrooks@summittech.io",    industry: "Technology",
-    reliabilityScore: 31,  totalInvoiced: 38900,  outstanding: 5400,  invoiceCount: 10, avgDaysLate: 16, trend: "down",
-  },
-  {
-    id: "c10", name: "Quinn Marsh",   company: "Nexus Group",        email: "qmarsh@nexusgroup.com",    industry: "Operations",
-    reliabilityScore: 88,  totalInvoiced: 72000,  outstanding: 0,     invoiceCount: 14, avgDaysLate: 2,  trend: "up",
-  },
-  {
-    id: "c11", name: "Avery West",    company: "Clearview Agency",   email: "awest@clearview.agency",   industry: "Advertising",
-    reliabilityScore: 47,  totalInvoiced: 16800,  outstanding: 3150,  invoiceCount: 4,  avgDaysLate: 11, trend: "flat",
-  },
-  {
-    id: "c12", name: "Jamie Stone",   company: "Ironwood Studios",   email: "j.stone@ironwood.studio",  industry: "Design",
-    reliabilityScore: 72,  totalInvoiced: 44200,  outstanding: 11200, invoiceCount: 8,  avgDaysLate: 5,  trend: "up",
-  },
-]
-
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 })
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseClient(r: any): Client {
+  const avgDays = Number(r.avg_payment_days ?? 0)
+  const trend: Client["trend"] = avgDays <= 7 ? "up" : avgDays > 15 ? "down" : "flat"
+  return {
+    dbId:             r.id,
+    name:             r.name,
+    company:          r.name,
+    email:            r.email,
+    reliabilityScore: Number(r.payment_score ?? 100),
+    totalInvoiced:    Number(r.total_invoiced ?? 0),
+    outstanding:      Number(r.outstanding ?? 0),
+    invoiceCount:     Number(r.invoice_count ?? 0),
+    avgDaysLate:      avgDays,
+    trend,
+  }
+}
 
 function scoreStyle(score: number) {
   if (score >= 70) return {
@@ -143,21 +108,64 @@ const TREND_ICON = {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function ClientsPage() {
+  const router = useRouter()
+
+  const [clients, setClients] = useState<Client[]>([])
+  const [loading, setLoading] = useState(true)
   const [search, setSearch]   = useState("")
   const [addOpen, setAddOpen] = useState(false)
 
+  const [newName,  setNewName]  = useState("")
+  const [newEmail, setNewEmail] = useState("")
+  const [newPhone, setNewPhone] = useState("")
+  const [saving,   setSaving]   = useState(false)
+
+  const loadClients = useCallback(async () => {
+    setLoading(true)
+    try {
+      const res = await fetch("/api/clients")
+      if (!res.ok) return
+      const data = await res.json()
+      setClients((data.clients ?? []).map(parseClient))
+    } finally {
+      setLoading(false)
+    }
+  }, [])
+
+  useEffect(() => { loadClients() }, [loadClients])
+
   const filtered = useMemo(() =>
-    CLIENTS.filter(c => {
+    clients.filter(c => {
       const q = search.toLowerCase()
       return !q || c.name.toLowerCase().includes(q) || c.company.toLowerCase().includes(q)
     }),
-    [search]
+    [clients, search]
   )
 
-  // Summary stats
-  const totalClients     = CLIENTS.length
-  const totalOutstanding = CLIENTS.reduce((s, c) => s + c.outstanding, 0)
-  const avgScore         = Math.round(CLIENTS.reduce((s, c) => s + c.reliabilityScore, 0) / CLIENTS.length)
+  const totalOutstanding = clients.reduce((s, c) => s + c.outstanding, 0)
+  const avgScore         = clients.length ? Math.round(clients.reduce((s, c) => s + c.reliabilityScore, 0) / clients.length) : 0
+  const atRiskCount      = clients.filter(c => c.reliabilityScore < 40).length
+
+  async function addClient() {
+    if (!newName || !newEmail) return
+    setSaving(true)
+    try {
+      const res = await fetch("/api/clients", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newName, email: newEmail, phone: newPhone || undefined }),
+      })
+      if (res.ok) {
+        setNewName(""); setNewEmail(""); setNewPhone("")
+        setAddOpen(false)
+        await loadClients()
+      }
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  const inputCls = "w-full h-9 px-3 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full">
@@ -166,7 +174,9 @@ export default function ClientsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight text-foreground">Clients</h1>
-          <p className="text-sm text-muted-foreground mt-0.5">{totalClients} clients · {fmt(totalOutstanding)} outstanding</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
+            {loading ? "Loading…" : `${clients.length} clients · ${fmt(totalOutstanding)} outstanding`}
+          </p>
         </div>
         <button
           onClick={() => setAddOpen(v => !v)}
@@ -181,10 +191,10 @@ export default function ClientsPage() {
       {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
         {[
-          { label: "Total Clients",     value: totalClients,            sub: "active"           },
-          { label: "Avg Reliability",   value: `${avgScore}/100`,       sub: "across all clients" },
-          { label: "Total Outstanding", value: fmt(totalOutstanding),   sub: "unpaid invoices"  },
-          { label: "At-Risk Clients",   value: CLIENTS.filter(c => c.reliabilityScore < 40).length, sub: "score below 40" },
+          { label: "Total Clients",     value: clients.length,      sub: "active"             },
+          { label: "Avg Reliability",   value: `${avgScore}/100`,   sub: "across all clients" },
+          { label: "Total Outstanding", value: fmt(totalOutstanding), sub: "unpaid invoices"  },
+          { label: "At-Risk Clients",   value: atRiskCount,          sub: "score below 40"   },
         ].map(s => (
           <div key={s.label} className="bg-card rounded-xl px-5 py-4" style={{ border: "1px solid var(--border)" }}>
             <p className="text-xs text-muted-foreground mb-1">{s.label}</p>
@@ -212,27 +222,29 @@ export default function ClientsPage() {
         <div className="bg-card rounded-xl px-6 py-5" style={{ border: "1px solid var(--border)" }}>
           <p className="text-sm font-semibold text-foreground mb-4">Add New Client</p>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {[
-              { label: "Full Name",     placeholder: "e.g. Jordan Cole" },
-              { label: "Company",       placeholder: "e.g. Foxwood Creative" },
-              { label: "Email",         placeholder: "e.g. jcole@company.com" },
-              { label: "Industry",      placeholder: "e.g. Design" },
-              { label: "Phone",         placeholder: "Optional" },
-            ].map(f => (
-              <div key={f.label}>
-                <label className="block text-xs font-medium text-muted-foreground mb-1.5">{f.label}</label>
-                <input
-                  type="text"
-                  placeholder={f.placeholder}
-                  className="w-full h-9 px-3 rounded-lg text-sm bg-background text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
-                  style={{ border: "1px solid var(--border)" }}
-                />
-              </div>
-            ))}
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Company Name *</label>
+              <input type="text" placeholder="e.g. Foxwood Creative" value={newName} onChange={e => setNewName(e.target.value)}
+                className={inputCls} style={{ border: "1px solid var(--border)" }} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Email *</label>
+              <input type="email" placeholder="e.g. billing@company.com" value={newEmail} onChange={e => setNewEmail(e.target.value)}
+                className={inputCls} style={{ border: "1px solid var(--border)" }} />
+            </div>
+            <div>
+              <label className="block text-xs font-medium text-muted-foreground mb-1.5">Phone</label>
+              <input type="text" placeholder="Optional" value={newPhone} onChange={e => setNewPhone(e.target.value)}
+                className={inputCls} style={{ border: "1px solid var(--border)" }} />
+            </div>
           </div>
           <div className="flex items-center gap-2 mt-5">
-            <button className="h-9 px-4 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-gray-100 transition-colors">
-              Save Client
+            <button
+              onClick={addClient}
+              disabled={!newName || !newEmail || saving}
+              className="h-9 px-4 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            >
+              {saving ? "Saving…" : "Save Client"}
             </button>
             <button
               onClick={() => setAddOpen(false)}
@@ -245,9 +257,15 @@ export default function ClientsPage() {
       )}
 
       {/* Client grid */}
-      {filtered.length === 0 ? (
+      {loading ? (
         <div className="bg-card rounded-xl px-6 py-16 text-center" style={{ border: "1px solid var(--border)" }}>
-          <p className="text-muted-foreground text-sm">No clients match your search.</p>
+          <p className="text-muted-foreground text-sm">Loading clients…</p>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="bg-card rounded-xl px-6 py-16 text-center" style={{ border: "1px solid var(--border)" }}>
+          <p className="text-muted-foreground text-sm">
+            {clients.length === 0 ? "No clients yet. Add your first client above." : "No clients match your search."}
+          </p>
         </div>
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -255,7 +273,7 @@ export default function ClientsPage() {
             const { textCls } = scoreStyle(client.reliabilityScore)
             return (
               <div
-                key={client.id}
+                key={client.dbId}
                 className="group bg-card rounded-xl px-6 py-5 flex flex-col gap-4 hover:shadow-sm transition-shadow"
                 style={{ border: "1px solid var(--border)" }}
               >
@@ -266,12 +284,11 @@ export default function ClientsPage() {
                       className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 text-sm font-bold text-primary"
                       style={{ background: "var(--accent)" }}
                     >
-                      {client.name.split(" ").map(n => n[0]).join("").slice(0, 2)}
+                      {client.name.split(" ").map(n => n[0]).join("").slice(0, 2).toUpperCase()}
                     </div>
                     <div className="min-w-0">
                       <p className="text-sm font-semibold text-foreground truncate">{client.name}</p>
-                      <p className="text-xs text-muted-foreground truncate">{client.company}</p>
-                      <p className="text-xs text-muted-foreground/70 truncate">{client.industry}</p>
+                      <p className="text-xs text-muted-foreground truncate">{client.email}</p>
                     </div>
                   </div>
                   <ScoreCircle score={client.reliabilityScore} />
@@ -314,7 +331,10 @@ export default function ClientsPage() {
                     <Mail className="w-3 h-3" />
                     Email
                   </a>
-                  <button className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors">
+                  <button
+                    onClick={() => router.push(`/dashboard/clients/${client.dbId}`)}
+                    className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+                  >
                     <ExternalLink className="w-3 h-3" />
                     View Invoices
                   </button>

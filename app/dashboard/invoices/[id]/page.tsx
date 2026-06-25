@@ -1,6 +1,7 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
+import { useParams } from "next/navigation"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -34,41 +35,78 @@ interface PaymentEvent {
   type: "paid" | "overdue" | "reminder" | "issued"
 }
 
-// ─── Seed data ────────────────────────────────────────────────────────────────
-
-const INVOICE = {
-  id:          "INV-0090",
-  client:      "Meridian Co.",
-  contact:     "Alex Torres",
-  email:       "atorres@meridian.co",
-  amount:      8750,
-  issueDate:   "Jun 3, 2026",
-  dueDate:     "Jun 28, 2026",
-  status:      "Overdue" as Status,
-  riskScore:   87,
-  currency:    "USD",
-  description: "Q2 brand strategy & digital campaign consulting",
-  lineItems:   [
-    { description: "Brand strategy workshop (2 days)", qty: 2,  unitPrice: 1800 },
-    { description: "Digital campaign planning",         qty: 1,  unitPrice: 2400 },
-    { description: "Creative direction (monthly)",      qty: 1,  unitPrice: 1950 },
-    { description: "Presentation deck & deliverables",  qty: 1,  unitPrice: 800  },
-  ] as LineItem[],
-  aiExplanation:
-    "Meridian Co. has a 73% late-payment rate over the last 12 months, with an average delay of 18 days past due. Their last 3 invoices were all paid after a second reminder. Cash flow irregularities detected in Q1 suggest budget pressure. Risk is classified High — proactive outreach is recommended before the due date.",
+interface InvoiceData {
+  invoiceNumber: string
+  client: string
+  email: string
+  amount: number
+  issueDate: string
+  dueDate: string
+  status: Status
+  riskScore: number
+  riskReason: string
+  currency: string
+  description: string
+  lineItems: LineItem[]
+  timeline: PaymentEvent[]
 }
-
-const PAYMENT_HISTORY: PaymentEvent[] = [
-  { date: "Jun 3, 2026",  label: "Invoice issued",         type: "issued",   note: "Sent to atorres@meridian.co" },
-  { date: "Jun 18, 2026", label: "Reminder sent",          type: "reminder", note: "Automated 10-day reminder" },
-  { date: "Jun 28, 2026", label: "Payment due — missed",   type: "overdue",  note: "No payment received" },
-  { date: "Jul 2, 2026",  label: "Follow-up email sent",   type: "reminder", note: "Manual follow-up by Jamie Davis" },
-]
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
   n.toLocaleString("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 2 })
+
+function formatDateDisplay(d: string | Date): string {
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function parseInvoice(r: any): InvoiceData {
+  const status = capitalize(r.status) as Status
+  const issueDate = formatDateDisplay(r.issue_date)
+  const dueDate = formatDateDisplay(r.due_date)
+
+  const timeline: PaymentEvent[] = [
+    { date: issueDate, label: "Invoice issued", type: "issued", note: `Sent to ${r.client_email}` },
+  ]
+  if (status === "Overdue") {
+    timeline.push({ date: dueDate, label: "Payment due — missed", type: "overdue", note: "No payment received" })
+  } else if (status === "Pending") {
+    timeline.push({ date: dueDate, label: "Payment due", type: "reminder", note: "Awaiting payment" })
+  }
+  if (r.paid_at) {
+    timeline.push({
+      date: formatDateDisplay(r.paid_at),
+      label: "Payment received",
+      type: "paid",
+      note: `Amount: ${fmt(Number(r.paid_amount ?? r.amount))}`,
+    })
+  }
+
+  const lineItems: LineItem[] = Array.isArray(r.line_items) && r.line_items.length > 0
+    ? r.line_items
+    : [{ description: r.description ?? "Services rendered", qty: 1, unitPrice: Number(r.amount) }]
+
+  return {
+    invoiceNumber: r.invoice_number,
+    client:        r.client_name,
+    email:         r.client_email,
+    amount:        Number(r.amount),
+    issueDate,
+    dueDate,
+    status,
+    riskScore:     Number(r.risk_score ?? 0),
+    riskReason:    r.risk_reason ?? "",
+    currency:      r.currency ?? "USD",
+    description:   r.description ?? "",
+    lineItems,
+    timeline,
+  }
+}
 
 const STATUS_STYLE: Record<Status, string> = {
   Paid:    "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20",
@@ -77,9 +115,9 @@ const STATUS_STYLE: Record<Status, string> = {
 }
 
 function riskColor(score: number) {
-  if (score >= 70) return { stroke: "#f43f5e", text: "text-rose-400",   label: "High Risk",   bg: "bg-rose-500/10",   ring: "ring-rose-500/20"   }
-  if (score >= 40) return { stroke: "#f59e0b", text: "text-amber-400",  label: "Medium Risk", bg: "bg-amber-500/10",  ring: "ring-amber-500/20"  }
-  return              { stroke: "#10b981", text: "text-emerald-400", label: "Low Risk",    bg: "bg-emerald-500/10",ring: "ring-emerald-500/20" }
+  if (score >= 70) return { stroke: "#f43f5e", text: "text-rose-400",   label: "High Risk",   bg: "bg-rose-500/10",    ring: "ring-rose-500/20"   }
+  if (score >= 40) return { stroke: "#f59e0b", text: "text-amber-400",  label: "Medium Risk", bg: "bg-amber-500/10",   ring: "ring-amber-500/20"  }
+  return              { stroke: "#10b981", text: "text-emerald-400", label: "Low Risk",    bg: "bg-emerald-500/10", ring: "ring-emerald-500/20" }
 }
 
 function RiskRing({ score }: { score: number }) {
@@ -121,53 +159,123 @@ const EVENT_ICON: Record<PaymentEvent["type"], React.ReactNode> = {
   paid:     <div className="w-7 h-7 rounded-full bg-emerald-500/10 flex items-center justify-center"><ShieldCheck    className="w-3.5 h-3.5 text-emerald-400" /></div>,
 }
 
-const DRAFT_EMAIL = {
-  subject: `Payment Reminder: ${INVOICE.id} — ${fmt(INVOICE.amount)} overdue`,
-  body: `Hi ${INVOICE.contact},
+// ─── Component ───────────────────────────────────────────────────────────────
 
-I hope this message finds you well. I'm reaching out regarding invoice ${INVOICE.id} for ${fmt(INVOICE.amount)}, which was due on ${INVOICE.dueDate}.
+export default function InvoiceDetailPage() {
+  const { id } = useParams<{ id: string }>()
+
+  const [invoice,      setInvoice]      = useState<InvoiceData | null>(null)
+  const [loading,      setLoading]      = useState(true)
+  const [status,       setStatus]       = useState<Status>("Pending")
+  const [emailOpen,    setEmailOpen]    = useState(false)
+  const [emailBody,    setEmailBody]    = useState("")
+  const [editingEmail, setEditingEmail] = useState(false)
+  const [copied,       setCopied]       = useState(false)
+  const [markPaidOpen, setMarkPaidOpen] = useState(false)
+  const [paidDate,     setPaidDate]     = useState("")
+  const [saving,       setSaving]       = useState(false)
+
+  function buildEmailBody(inv: InvoiceData): string {
+    return `Hi ${inv.client},
+
+I hope this message finds you well. I'm reaching out regarding invoice ${inv.invoiceNumber} for ${fmt(inv.amount)}, which was due on ${inv.dueDate}.
 
 As of today, we haven't received payment. Could you please let us know the status or expected payment date?
 
 If there's anything on your end we can help clarify, don't hesitate to reach out.
 
 Invoice details:
-  • Invoice #: ${INVOICE.id}
-  • Amount due: ${fmt(INVOICE.amount)}
-  • Due date: ${INVOICE.dueDate}
-  • Description: ${INVOICE.description}
+  • Invoice #: ${inv.invoiceNumber}
+  • Amount due: ${fmt(inv.amount)}
+  • Due date: ${inv.dueDate}
+  • Description: ${inv.description}
 
 Thank you for your prompt attention.
 
 Best regards,
 Jamie Davis
-Acme Studio`,
-}
+Acme Studio`
+  }
 
-// ─── Component ───────────────────────────────────────────────────────────────
-
-export default function InvoiceDetailPage() {
-  const [emailOpen,    setEmailOpen]    = useState(false)
-  const [emailBody,    setEmailBody]    = useState(DRAFT_EMAIL.body)
-  const [editingEmail, setEditingEmail] = useState(false)
-  const [copied,       setCopied]       = useState(false)
-  const [markPaidOpen, setMarkPaidOpen] = useState(false)
-  const [paidDate,     setPaidDate]     = useState("")
-  const [status,       setStatus]       = useState<Status>(INVOICE.status)
+  useEffect(() => {
+    if (!id) return
+    async function load() {
+      setLoading(true)
+      try {
+        const res = await fetch(`/api/invoices/${id}`)
+        if (!res.ok) return
+        const { invoice: raw } = await res.json()
+        const parsed = parseInvoice(raw)
+        setInvoice(parsed)
+        setStatus(parsed.status)
+        setEmailBody(buildEmailBody(parsed))
+      } finally {
+        setLoading(false)
+      }
+    }
+    load()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id])
 
   function copyEmail() {
-    navigator.clipboard.writeText(`Subject: ${DRAFT_EMAIL.subject}\n\n${emailBody}`)
+    if (!invoice) return
+    const subject = `Payment Reminder: ${invoice.invoiceNumber} — ${fmt(invoice.amount)} overdue`
+    navigator.clipboard.writeText(`Subject: ${subject}\n\n${emailBody}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
 
-  function confirmPaid() {
-    setStatus("Paid")
-    setMarkPaidOpen(false)
+  async function confirmPaid() {
+    if (!paidDate || !id) return
+    setSaving(true)
+    try {
+      const res = await fetch(`/api/invoices/${id}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ status: "paid", paid_date: paidDate }),
+      })
+      if (!res.ok) return
+      setStatus("Paid")
+      setMarkPaidOpen(false)
+      // Reload full invoice (GET includes client_name/client_email from JOIN)
+      const getRes = await fetch(`/api/invoices/${id}`)
+      if (getRes.ok) {
+        const { invoice: raw } = await getRes.json()
+        const parsed = parseInvoice(raw)
+        setInvoice(parsed)
+        setStatus(parsed.status)
+      }
+    } finally {
+      setSaving(false)
+    }
   }
 
-  const grandTotal = INVOICE.lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0)
-  const { stroke: _s, ...rc } = riskColor(INVOICE.riskScore)
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-full p-8 pt-20 md:pt-8">
+        <p className="text-muted-foreground text-sm">Loading invoice…</p>
+      </div>
+    )
+  }
+
+  if (!invoice) {
+    return (
+      <div className="flex flex-col gap-4 p-8 pt-20 md:pt-8">
+        <Link
+          href="/dashboard/invoices"
+          className="inline-flex items-center gap-1.5 text-sm text-muted-foreground hover:text-foreground transition-colors"
+        >
+          <ArrowLeft className="w-4 h-4" />
+          Back to Invoices
+        </Link>
+        <p className="text-muted-foreground">Invoice not found.</p>
+      </div>
+    )
+  }
+
+  const grandTotal   = invoice.lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0)
+  const { stroke: _s, ...rc } = riskColor(invoice.riskScore)
+  const emailSubject = `Payment Reminder: ${invoice.invoiceNumber} — ${fmt(invoice.amount)} overdue`
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full max-w-5xl mx-auto w-full">
@@ -185,17 +293,15 @@ export default function InvoiceDetailPage() {
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
           <div>
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold tracking-tight text-foreground font-mono">{INVOICE.id}</h1>
+              <h1 className="text-2xl font-bold tracking-tight text-foreground font-mono">{invoice.invoiceNumber}</h1>
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLE[status]}`}>
                 {status}
               </span>
             </div>
             <p className="text-muted-foreground mt-1">
-              <span className="font-medium text-foreground">{INVOICE.client}</span>
+              <span className="font-medium text-foreground">{invoice.client}</span>
               {" · "}
-              {INVOICE.contact}
-              {" · "}
-              <a href={`mailto:${INVOICE.email}`} className="hover:text-primary transition-colors">{INVOICE.email}</a>
+              <a href={`mailto:${invoice.email}`} className="hover:text-primary transition-colors">{invoice.email}</a>
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -223,20 +329,20 @@ export default function InvoiceDetailPage() {
       <div className="bg-card rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style={{ border: "1px solid var(--border)" }}>
         <div>
           <p className="text-xs text-muted-foreground uppercase tracking-widest font-semibold mb-1">Amount Due</p>
-          <p className="text-4xl font-bold tracking-tight text-foreground tabular-nums">{fmt(INVOICE.amount)}</p>
+          <p className="text-4xl font-bold tracking-tight text-foreground tabular-nums">{fmt(invoice.amount)}</p>
         </div>
         <div className="flex gap-8 text-sm">
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Issue Date</p>
-            <p className="font-semibold text-foreground">{INVOICE.issueDate}</p>
+            <p className="font-semibold text-foreground">{invoice.issueDate}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Due Date</p>
-            <p className="font-semibold text-rose-400">{INVOICE.dueDate}</p>
+            <p className={`font-semibold ${status === "Overdue" ? "text-rose-400" : "text-foreground"}`}>{invoice.dueDate}</p>
           </div>
           <div>
             <p className="text-xs text-muted-foreground mb-0.5">Currency</p>
-            <p className="font-semibold text-foreground">{INVOICE.currency}</p>
+            <p className="font-semibold text-foreground">{invoice.currency}</p>
           </div>
         </div>
       </div>
@@ -264,10 +370,10 @@ export default function InvoiceDetailPage() {
             </button>
             <button
               onClick={confirmPaid}
-              disabled={!paidDate}
+              disabled={!paidDate || saving}
               className="h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-500 text-emerald-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
             >
-              Confirm
+              {saving ? "Saving…" : "Confirm"}
             </button>
           </div>
         </div>
@@ -309,7 +415,7 @@ export default function InvoiceDetailPage() {
           <div className="px-6 py-4 flex flex-col gap-3">
             <div>
               <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Subject</p>
-              <p className="text-sm text-foreground font-medium">{DRAFT_EMAIL.subject}</p>
+              <p className="text-sm text-foreground font-medium">{emailSubject}</p>
             </div>
             <div>
               <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Body</p>
@@ -340,10 +446,10 @@ export default function InvoiceDetailPage() {
             <Sparkles className="w-4 h-4 text-primary" />
             <p className="text-sm font-semibold text-foreground">AI Risk Score</p>
           </div>
-          <RiskRing score={INVOICE.riskScore} />
+          <RiskRing score={invoice.riskScore} />
           <div className={`w-full rounded-lg px-4 py-3 text-xs leading-relaxed text-left ${rc.bg}`} style={{ border: `1px solid var(--border)` }}>
             <p className={`font-semibold text-xs mb-1.5 uppercase tracking-wide ${rc.text}`}>AI Analysis</p>
-            <p className="text-muted-foreground leading-relaxed">{INVOICE.aiExplanation}</p>
+            <p className="text-muted-foreground leading-relaxed">{invoice.riskReason}</p>
           </div>
         </div>
 
@@ -354,7 +460,7 @@ export default function InvoiceDetailPage() {
           <div className="bg-card rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
             <div className="px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
               <p className="text-sm font-semibold text-foreground">Invoice Details</p>
-              <p className="text-xs text-muted-foreground mt-0.5">{INVOICE.description}</p>
+              <p className="text-xs text-muted-foreground mt-0.5">{invoice.description}</p>
             </div>
             <table className="w-full text-sm">
               <thead>
@@ -367,11 +473,11 @@ export default function InvoiceDetailPage() {
                 </tr>
               </thead>
               <tbody>
-                {INVOICE.lineItems.map((li, i) => (
+                {invoice.lineItems.map((li, i) => (
                   <tr
                     key={i}
                     className="hover:bg-muted/30 transition-colors"
-                    style={i < INVOICE.lineItems.length - 1 ? { borderBottom: "1px solid var(--border)" } : {}}
+                    style={i < invoice.lineItems.length - 1 ? { borderBottom: "1px solid var(--border)" } : {}}
                   >
                     <td className="px-6 py-3.5 text-foreground">{li.description}</td>
                     <td className="px-6 py-3.5 text-right text-muted-foreground tabular-nums">{li.qty}</td>
@@ -391,12 +497,11 @@ export default function InvoiceDetailPage() {
 
           {/* Payment history */}
           <div className="bg-card rounded-xl px-6 py-5" style={{ border: "1px solid var(--border)" }}>
-            <p className="text-sm font-semibold text-foreground mb-5">Payment History — {INVOICE.client}</p>
+            <p className="text-sm font-semibold text-foreground mb-5">Payment History — {invoice.client}</p>
             <ol className="relative flex flex-col gap-0">
-              {PAYMENT_HISTORY.map((ev, i) => (
+              {invoice.timeline.map((ev, i) => (
                 <li key={i} className="flex gap-4 pb-5 last:pb-0 relative">
-                  {/* Connector line */}
-                  {i < PAYMENT_HISTORY.length - 1 && (
+                  {i < invoice.timeline.length - 1 && (
                     <div className="absolute left-3.5 top-7 bottom-0 w-px bg-border" aria-hidden />
                   )}
                   <div className="shrink-0 z-10">{EVENT_ICON[ev.type]}</div>

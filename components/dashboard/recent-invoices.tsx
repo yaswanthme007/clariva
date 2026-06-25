@@ -1,28 +1,20 @@
-"use client"
-
+import Link from "next/link"
 import { ArrowUpRight } from "lucide-react"
+import { auth } from "@/lib/auth"
+import { pool } from "@/lib/db"
 
 type Status = "Paid" | "Pending" | "Overdue"
 type Risk   = "Low"  | "Medium"  | "High"
 
 interface Invoice {
   id: string
+  dbId: string
   client: string
   amount: string
   due: string
   status: Status
   risk: Risk
 }
-
-const INVOICES: Invoice[] = [
-  { id: "INV-0091", client: "Bright Labs",       amount: "$4,200",  due: "Jun 20, 2026", status: "Paid",    risk: "Low"    },
-  { id: "INV-0090", client: "Meridian Co.",       amount: "$8,750",  due: "Jun 28, 2026", status: "Overdue", risk: "High"   },
-  { id: "INV-0089", client: "Foxwood Creative",   amount: "$1,950",  due: "Jul 3, 2026",  status: "Pending", risk: "Medium" },
-  { id: "INV-0088", client: "Apex Solutions",     amount: "$12,400", due: "Jul 10, 2026", status: "Pending", risk: "Low"    },
-  { id: "INV-0087", client: "Harbor Consulting",  amount: "$3,300",  due: "Jun 15, 2026", status: "Overdue", risk: "High"   },
-  { id: "INV-0086", client: "Orion Media",        amount: "$6,600",  due: "Jul 18, 2026", status: "Pending", risk: "Medium" },
-  { id: "INV-0085", client: "Starside Digital",   amount: "$2,100",  due: "May 30, 2026", status: "Paid",    risk: "Low"    },
-]
 
 const STATUS_STYLES: Record<Status, string> = {
   Paid:    "bg-emerald-500/10 text-emerald-400 ring-emerald-500/20",
@@ -63,7 +55,42 @@ function RiskBadge({ risk }: { risk: Risk }) {
   )
 }
 
-export function RecentInvoices() {
+function formatDate(d: string | Date): string {
+  return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1)
+}
+
+export async function RecentInvoices() {
+  const session = await auth()
+  const userId = session?.user?.id
+
+  let invoices: Invoice[] = []
+
+  if (userId) {
+    const { rows } = await pool.query(
+      `SELECT i.id, i.invoice_number, i.amount, i.due_date, i.status, i.risk_label, c.name AS client_name
+       FROM invoices i
+       JOIN clients c ON c.id = i.client_id
+       WHERE i.user_id = $1
+       ORDER BY i.created_at DESC
+       LIMIT 7`,
+      [userId]
+    )
+
+    invoices = rows.map(r => ({
+      id:     r.invoice_number,
+      dbId:   r.id,
+      client: r.client_name,
+      amount: "$" + Number(r.amount).toLocaleString("en-US"),
+      due:    formatDate(r.due_date),
+      status: capitalize(r.status) as Status,
+      risk:   (r.risk_label ?? "Low") as Risk,
+    }))
+  }
+
   return (
     <div
       className="bg-card rounded-xl"
@@ -75,10 +102,13 @@ export function RecentInvoices() {
           <h2 className="text-base font-semibold text-foreground">Recent Invoices</h2>
           <p className="text-sm text-muted-foreground mt-0.5">Your latest 7 invoices</p>
         </div>
-        <button className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-foreground transition-colors">
+        <Link
+          href="/dashboard/invoices"
+          className="flex items-center gap-1.5 text-sm font-medium text-primary hover:text-foreground transition-colors"
+        >
           View all
           <ArrowUpRight className="w-4 h-4" />
-        </button>
+        </Link>
       </div>
 
       {/* Table — desktop */}
@@ -97,11 +127,17 @@ export function RecentInvoices() {
             </tr>
           </thead>
           <tbody>
-            {INVOICES.map((inv, i) => (
+            {invoices.length === 0 ? (
+              <tr>
+                <td colSpan={6} className="px-6 py-12 text-center text-sm text-muted-foreground">
+                  No invoices yet.
+                </td>
+              </tr>
+            ) : invoices.map((inv, i) => (
               <tr
-                key={inv.id}
+                key={inv.dbId}
                 className="hover:bg-muted/40 transition-colors cursor-pointer"
-                style={i < INVOICES.length - 1 ? { borderBottom: "1px solid var(--border)" } : {}}
+                style={i < invoices.length - 1 ? { borderBottom: "1px solid var(--border)" } : {}}
               >
                 <td className="px-6 py-4 font-mono text-xs font-medium text-foreground">
                   {inv.id}
@@ -123,8 +159,10 @@ export function RecentInvoices() {
 
       {/* Mobile card list */}
       <div className="sm:hidden divide-y divide-border">
-        {INVOICES.map((inv) => (
-          <div key={inv.id} className="px-5 py-4 flex flex-col gap-2.5">
+        {invoices.length === 0 ? (
+          <p className="px-5 py-12 text-center text-sm text-muted-foreground">No invoices yet.</p>
+        ) : invoices.map((inv) => (
+          <div key={inv.dbId} className="px-5 py-4 flex flex-col gap-2.5">
             <div className="flex items-center justify-between">
               <span className="font-mono text-xs text-muted-foreground">{inv.id}</span>
               <span className="font-semibold text-foreground tabular-nums">{inv.amount}</span>
