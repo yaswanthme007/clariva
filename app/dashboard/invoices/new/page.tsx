@@ -1,7 +1,8 @@
 "use client"
 
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import {
   ArrowLeft,
   Plus,
@@ -9,6 +10,7 @@ import {
   Sparkles,
   Loader2,
   ChevronDown,
+  AlertCircle,
 } from "lucide-react"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
@@ -20,20 +22,12 @@ interface LineItem {
   unitPrice: string
 }
 
-// ─── Constants ────────────────────────────────────────────────────────────────
+interface ApiClient {
+  id: string
+  name: string
+}
 
-const CLIENTS = [
-  "Bright Labs",
-  "Meridian Co.",
-  "Foxwood Creative",
-  "Apex Solutions",
-  "Harbor Consulting",
-  "Orion Media",
-  "Starside Digital",
-  "Vantage Partners",
-  "Summit Tech",
-  "Nexus Group",
-]
+// ─── Constants ────────────────────────────────────────────────────────────────
 
 const CURRENCIES = ["USD", "EUR", "GBP", "CAD", "AUD"]
 
@@ -112,9 +106,24 @@ function Select({
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function NewInvoicePage() {
+  const router = useRouter()
+
+  // Real clients from API
+  const [apiClients, setApiClients] = useState<ApiClient[]>([])
+
+  useEffect(() => {
+    fetch("/api/clients")
+      .then(r => r.json())
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      .then(data => setApiClients((data.clients ?? []).map((c: any) => ({ id: c.id, name: c.name }))))
+      .catch(() => {})
+  }, [])
+
   // AI extract
-  const [extractText, setExtractText]   = useState("")
-  const [extracting, setExtracting]     = useState(false)
+  const [extractText, setExtractText] = useState("")
+  const [extracting, setExtracting]   = useState(false)
+  const [extractError, setExtractError] = useState("")
+  const [submitError, setSubmitError]   = useState("")
 
   // Form fields
   const [client, setClient]             = useState("")
@@ -130,6 +139,9 @@ export default function NewInvoicePage() {
     { id: 2, description: "", quantity: "1", unitPrice: "" },
     { id: 3, description: "", quantity: "1", unitPrice: "" },
   ])
+
+  // Submit
+  const [submitting, setSubmitting] = useState(false)
 
   // Derived totals
   const lineTotal = (item: LineItem) => {
@@ -152,26 +164,105 @@ export default function NewInvoicePage() {
     setLineItems(prev => prev.map(item => item.id === id ? { ...item, [field]: val } : item))
   }
 
-  function handleExtract() {
+  async function handleExtract() {
     if (!extractText.trim()) return
     setExtracting(true)
-    setTimeout(() => {
-      // Simulate AI filling the form with parsed values
-      setClient("Meridian Co.")
-      setInvoiceNum("INV-0092")
-      setIssueDate("2026-06-24")
-      setDueDate("2026-07-24")
-      setCurrency("USD")
-      setDescription("Web development services — Q2 2026 retainer")
-      setLineItems([
-        { id: nextId++, description: "Frontend development",   quantity: "40", unitPrice: "150" },
-        { id: nextId++, description: "UI/UX design review",    quantity: "8",  unitPrice: "175" },
-        { id: nextId++, description: "QA & bug fixes",         quantity: "12", unitPrice: "120" },
-      ])
+    setExtractError("")
+    try {
+      const res = await fetch("/api/ai/extract", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: extractText }),
+      })
+      if (!res.ok) {
+        setExtractError("AI extraction failed. Please fill in the form manually.")
+        return
+      }
+      const { extracted } = await res.json()
+      if (!extracted) return
+
+      if (extracted.client_name) {
+        const match = apiClients.find(
+          c => c.name.toLowerCase() === extracted.client_name.toLowerCase()
+        )
+        if (match) setClient(match.name)
+      }
+      if (extracted.invoice_number) setInvoiceNum(extracted.invoice_number)
+      if (extracted.issue_date)     setIssueDate(extracted.issue_date)
+      if (extracted.due_date)       setDueDate(extracted.due_date)
+      if (extracted.currency)       setCurrency(extracted.currency)
+      if (extracted.description)    setDescription(extracted.description)
+
+      if (Array.isArray(extracted.line_items) && extracted.line_items.length > 0) {
+        setLineItems(
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          extracted.line_items.map((li: any) => ({
+            id: nextId++,
+            description: li.description ?? "",
+            quantity:    String(li.qty ?? 1),
+            unitPrice:   String(li.unitPrice ?? ""),
+          }))
+        )
+      } else if (extracted.amount) {
+        setLineItems([{
+          id: nextId++,
+          description: extracted.description ?? "Services rendered",
+          quantity:    "1",
+          unitPrice:   String(extracted.amount),
+        }])
+      }
+    } catch {
+      setExtractError("Something went wrong with AI extraction. Please try again.")
+    } finally {
       setExtracting(false)
-    }, 1800)
+    }
   }
 
+  async function handleSubmit() {
+    const selectedClient = apiClients.find(c => c.name === client)
+    if (!selectedClient || !dueDate) return
+
+    const validItems = lineItems.filter(li => li.description && parseFloat(li.unitPrice) > 0)
+    const amount = grandTotal > 0 ? grandTotal : undefined
+    if (!amount) return
+
+    setSubmitting(true)
+    setSubmitError("")
+    try {
+      const res = await fetch("/api/invoices", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          client_id:   selectedClient.id,
+          issue_date:  issueDate,
+          due_date:    dueDate,
+          amount,
+          currency,
+          description: description || undefined,
+          line_items:  validItems.length > 0
+            ? validItems.map(li => ({
+                description: li.description,
+                qty:         parseFloat(li.quantity) || 1,
+                unitPrice:   parseFloat(li.unitPrice) || 0,
+              }))
+            : undefined,
+        }),
+      })
+      if (res.ok) {
+        const { invoice } = await res.json()
+        fetch(`/api/invoices/${invoice.id}/risk`, { method: "POST" }).catch(() => {})
+        router.push("/dashboard/invoices")
+      } else {
+        setSubmitError("Failed to create invoice. Please try again.")
+      }
+    } catch {
+      setSubmitError("Something went wrong. Please try again.")
+    } finally {
+      setSubmitting(false)
+    }
+  }
+
+  const clientNames = apiClients.map(c => c.name)
   const fmtCurrency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n)
 
@@ -217,6 +308,12 @@ export default function NewInvoicePage() {
           className="w-full px-3 py-2.5 rounded-lg text-sm bg-card text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow resize-none"
           style={{ border: "1px solid var(--border)" }}
         />
+        {extractError && (
+          <div className="flex items-center gap-2 mt-3 rounded-lg px-3 py-2 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            {extractError}
+          </div>
+        )}
         <div className="flex justify-end mt-3">
           <button
             onClick={handleExtract}
@@ -244,8 +341,8 @@ export default function NewInvoicePage() {
               id="client"
               value={client}
               onChange={setClient}
-              options={CLIENTS}
-              placeholder="Select a client…"
+              options={clientNames}
+              placeholder={clientNames.length === 0 ? "Loading clients…" : "Select a client…"}
             />
           </div>
           <div>
@@ -401,6 +498,14 @@ export default function NewInvoicePage() {
         </div>
       </div>
 
+      {/* Submit error */}
+      {submitError && (
+        <div className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {submitError}
+        </div>
+      )}
+
       {/* ── Submit ───────────────────────────────────────────────── */}
       <div className="flex items-center justify-between gap-4 pb-8">
         <Link
@@ -418,9 +523,11 @@ export default function NewInvoicePage() {
             Save as Draft
           </button>
           <button
-            className="h-9 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-gray-100 active:scale-[0.98]"
+            onClick={handleSubmit}
+            disabled={submitting || !client || !dueDate || grandTotal <= 0}
+            className="h-9 px-5 rounded-lg bg-primary text-primary-foreground text-sm font-semibold transition-all hover:bg-gray-100 active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            Create Invoice
+            {submitting ? "Creating…" : "Create Invoice"}
           </button>
         </div>
       </div>

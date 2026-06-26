@@ -12,7 +12,9 @@ import {
   CheckCircle,
   Trash2,
   ChevronDown,
+  AlertCircle,
 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -35,7 +37,8 @@ const PAGE_SIZE = 10
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
-const fmt = (n: number) => "$" + n.toLocaleString("en-US")
+const fmt = (n: number) =>
+  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
 
 function formatDate(d: string): string {
   return new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" })
@@ -86,6 +89,7 @@ export default function InvoicesPage() {
 
   const [invoices, setInvoices]         = useState<Invoice[]>([])
   const [loading, setLoading]           = useState(true)
+  const [error, setError]               = useState("")
   const [search, setSearch]             = useState("")
   const [statusFilter, setStatus]       = useState<"All" | Status>("All")
   const [page, setPage]                 = useState(1)
@@ -93,9 +97,13 @@ export default function InvoicesPage() {
 
   const loadInvoices = useCallback(async () => {
     setLoading(true)
+    setError("")
     try {
       const res = await fetch("/api/invoices")
-      if (!res.ok) return
+      if (!res.ok) {
+        setError("Failed to load invoices. Please refresh the page.")
+        return
+      }
       const data = await res.json()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setInvoices((data.invoices ?? []).map((r: any) => ({
@@ -109,6 +117,8 @@ export default function InvoicesPage() {
         risk:      (r.risk_label ?? "Low") as Risk,
         riskScore: Number(r.risk_score ?? 0),
       })))
+    } catch {
+      setError("Something went wrong loading invoices. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -227,6 +237,14 @@ export default function InvoicesPage() {
         </div>
       </div>
 
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       {/* Table card */}
       <div className="bg-card rounded-xl flex-1" style={{ border: "1px solid var(--border)" }}>
 
@@ -244,11 +262,18 @@ export default function InvoicesPage() {
             </thead>
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan={8} className="px-5 py-16 text-center text-sm text-muted-foreground">
-                    Loading invoices…
-                  </td>
-                </tr>
+                Array.from({ length: 5 }).map((_, i) => (
+                  <tr key={i} style={i < 4 ? { borderBottom: "1px solid var(--border)" } : {}}>
+                    <td className="px-5 py-3.5"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-5 py-3.5"><Skeleton className="h-4 w-28" /></td>
+                    <td className="px-5 py-3.5"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-5 py-3.5"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-5 py-3.5"><Skeleton className="h-4 w-20" /></td>
+                    <td className="px-5 py-3.5"><Skeleton className="h-5 w-16 rounded-full" /></td>
+                    <td className="px-5 py-3.5"><Skeleton className="h-3 w-24" /></td>
+                    <td className="px-5 py-3.5" />
+                  </tr>
+                ))
               ) : paginated.length === 0 ? (
                 <tr>
                   <td colSpan={8} className="px-5 py-16 text-center text-sm text-muted-foreground">
@@ -318,7 +343,22 @@ export default function InvoicesPage() {
         {/* Mobile card list */}
         <div className="sm:hidden divide-y divide-border">
           {loading ? (
-            <p className="px-5 py-12 text-center text-sm text-muted-foreground">Loading invoices…</p>
+            Array.from({ length: 3 }).map((_, i) => (
+              <div key={i} className="px-5 py-4 flex flex-col gap-2.5">
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-3 w-16" />
+                  <Skeleton className="h-4 w-20" />
+                </div>
+                <div className="flex items-center justify-between">
+                  <Skeleton className="h-4 w-28" />
+                  <Skeleton className="h-3 w-20" />
+                </div>
+                <div className="flex items-center gap-2">
+                  <Skeleton className="h-5 w-16 rounded-full" />
+                  <Skeleton className="h-3 flex-1" />
+                </div>
+              </div>
+            ))
           ) : paginated.length === 0 ? (
             <p className="px-5 py-12 text-center text-sm text-muted-foreground">No invoices match your filters.</p>
           ) : paginated.map((inv) => (

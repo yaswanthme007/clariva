@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import { useParams } from "next/navigation"
 import Link from "next/link"
 import {
@@ -16,7 +16,10 @@ import {
   ShieldCheck,
   Pencil,
   X,
+  Loader2,
+  AlertCircle,
 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // ─── Types ───────────────────────────────────────────────────────────────────
 
@@ -164,16 +167,22 @@ const EVENT_ICON: Record<PaymentEvent["type"], React.ReactNode> = {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
 
-  const [invoice,      setInvoice]      = useState<InvoiceData | null>(null)
-  const [loading,      setLoading]      = useState(true)
-  const [status,       setStatus]       = useState<Status>("Pending")
-  const [emailOpen,    setEmailOpen]    = useState(false)
-  const [emailBody,    setEmailBody]    = useState("")
-  const [editingEmail, setEditingEmail] = useState(false)
-  const [copied,       setCopied]       = useState(false)
-  const [markPaidOpen, setMarkPaidOpen] = useState(false)
-  const [paidDate,     setPaidDate]     = useState("")
-  const [saving,       setSaving]       = useState(false)
+  const [invoice,        setInvoice]        = useState<InvoiceData | null>(null)
+  const [loading,        setLoading]        = useState(true)
+  const [fetchError,     setFetchError]     = useState("")
+  const [status,         setStatus]         = useState<Status>("Pending")
+  const [emailOpen,      setEmailOpen]      = useState(false)
+  const [emailBody,      setEmailBody]      = useState("")
+  const [aiEmailSubject, setAiEmailSubject] = useState<string | null>(null)
+  const [generatingEmail,setGeneratingEmail]= useState(false)
+  const [editingEmail,   setEditingEmail]   = useState(false)
+  const [copied,         setCopied]         = useState(false)
+  const [markPaidOpen,   setMarkPaidOpen]   = useState(false)
+  const [paidDate,       setPaidDate]       = useState("")
+  const [saving,         setSaving]         = useState(false)
+
+  // Prevent firing risk endpoint more than once per page load
+  const riskCalledRef = useRef(false)
 
   function buildEmailBody(inv: InvoiceData): string {
     return `Hi ${inv.client},
@@ -197,18 +206,25 @@ Jamie Davis
 Acme Studio`
   }
 
+  // Load invoice
   useEffect(() => {
     if (!id) return
     async function load() {
       setLoading(true)
+      setFetchError("")
       try {
         const res = await fetch(`/api/invoices/${id}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          setFetchError(res.status === 404 ? "Invoice not found." : "Failed to load invoice. Please try again.")
+          return
+        }
         const { invoice: raw } = await res.json()
         const parsed = parseInvoice(raw)
         setInvoice(parsed)
         setStatus(parsed.status)
         setEmailBody(buildEmailBody(parsed))
+      } catch {
+        setFetchError("Something went wrong loading this invoice. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -217,12 +233,50 @@ Acme Studio`
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
+  // Auto-refresh risk score with Groq explanation once invoice is loaded
+  useEffect(() => {
+    if (!id || !invoice || riskCalledRef.current) return
+    riskCalledRef.current = true
+    fetch(`/api/invoices/${id}/risk`, { method: "POST" })
+      .then(r => r.ok ? r.json() : null)
+      .then(data => {
+        if (data?.risk_reason) {
+          setInvoice(prev => prev
+            ? { ...prev, riskScore: data.risk_score, riskReason: data.risk_reason }
+            : prev
+          )
+        }
+      })
+      .catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [id, invoice])
+
+  const emailSubject = aiEmailSubject
+    ?? (invoice ? `Payment Reminder: ${invoice.invoiceNumber} — ${fmt(invoice.amount)} overdue` : "")
+
   function copyEmail() {
-    if (!invoice) return
-    const subject = `Payment Reminder: ${invoice.invoiceNumber} — ${fmt(invoice.amount)} overdue`
-    navigator.clipboard.writeText(`Subject: ${subject}\n\n${emailBody}`)
+    navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleGenerateReminder() {
+    if (!id) return
+    setGeneratingEmail(true)
+    try {
+      const res = await fetch("/api/ai/reminder", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ invoiceId: id }),
+      })
+      if (!res.ok) return
+      const { subject, body } = await res.json()
+      if (subject) setAiEmailSubject(subject)
+      if (body)    setEmailBody(body)
+      setEmailOpen(true)
+    } finally {
+      setGeneratingEmail(false)
+    }
   }
 
   async function confirmPaid() {
@@ -252,13 +306,44 @@ Acme Studio`
 
   if (loading) {
     return (
-      <div className="flex items-center justify-center min-h-full p-8 pt-20 md:pt-8">
-        <p className="text-muted-foreground text-sm">Loading invoice…</p>
+      <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full max-w-5xl mx-auto w-full">
+        <Skeleton className="h-4 w-28" />
+        <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4">
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-56" />
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-9 w-36" />
+            <Skeleton className="h-9 w-28" />
+          </div>
+        </div>
+        <div className="bg-card rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4" style={{ border: "1px solid var(--border)" }}>
+          <div className="flex flex-col gap-2">
+            <Skeleton className="h-3 w-20" />
+            <Skeleton className="h-12 w-44" />
+          </div>
+          <div className="flex gap-8">
+            {[0, 1, 2].map(i => (
+              <div key={i} className="flex flex-col gap-1.5">
+                <Skeleton className="h-3 w-16" />
+                <Skeleton className="h-5 w-20" />
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <Skeleton className="h-72 rounded-xl" />
+          <div className="lg:col-span-2 flex flex-col gap-6">
+            <Skeleton className="h-48 rounded-xl" />
+            <Skeleton className="h-40 rounded-xl" />
+          </div>
+        </div>
       </div>
     )
   }
 
-  if (!invoice) {
+  if (fetchError || !invoice) {
     return (
       <div className="flex flex-col gap-4 p-8 pt-20 md:pt-8">
         <Link
@@ -268,14 +353,16 @@ Acme Studio`
           <ArrowLeft className="w-4 h-4" />
           Back to Invoices
         </Link>
-        <p className="text-muted-foreground">Invoice not found.</p>
+        <div className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {fetchError || "Invoice not found."}
+        </div>
       </div>
     )
   }
 
   const grandTotal   = invoice.lineItems.reduce((s, li) => s + li.qty * li.unitPrice, 0)
   const { stroke: _s, ...rc } = riskColor(invoice.riskScore)
-  const emailSubject = `Payment Reminder: ${invoice.invoiceNumber} — ${fmt(invoice.amount)} overdue`
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full max-w-5xl mx-auto w-full">
@@ -306,11 +393,15 @@ Acme Studio`
           </div>
           <div className="flex items-center gap-2 flex-wrap">
             <button
-              onClick={() => setEmailOpen(v => !v)}
-              className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold border border-border bg-card text-foreground hover:bg-muted transition-colors"
+              onClick={handleGenerateReminder}
+              disabled={generatingEmail}
+              className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold border border-border bg-card text-foreground hover:bg-muted transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
-              <Mail className="w-4 h-4" />
-              Generate Reminder
+              {generatingEmail ? (
+                <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</>
+              ) : (
+                <><Mail className="w-4 h-4" /> Generate Reminder</>
+              )}
             </button>
             {status !== "Paid" && (
               <button
@@ -386,6 +477,11 @@ Acme Studio`
             <div className="flex items-center gap-2">
               <Mail className="w-4 h-4 text-primary" />
               <p className="text-sm font-semibold text-foreground">Draft Reminder Email</p>
+              {aiEmailSubject && (
+                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                  <Sparkles className="w-3 h-3" /> AI Generated
+                </span>
+              )}
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -449,7 +545,9 @@ Acme Studio`
           <RiskRing score={invoice.riskScore} />
           <div className={`w-full rounded-lg px-4 py-3 text-xs leading-relaxed text-left ${rc.bg}`} style={{ border: `1px solid var(--border)` }}>
             <p className={`font-semibold text-xs mb-1.5 uppercase tracking-wide ${rc.text}`}>AI Analysis</p>
-            <p className="text-muted-foreground leading-relaxed">{invoice.riskReason}</p>
+            <p className="text-muted-foreground leading-relaxed">
+              {invoice.riskReason || "Analyzing payment risk…"}
+            </p>
           </div>
         </div>
 

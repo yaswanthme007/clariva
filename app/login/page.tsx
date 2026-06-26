@@ -36,6 +36,23 @@ export default function LoginPage() {
     }
   }
 
+  async function handleDemo() {
+    setError("")
+    setLoading(true)
+    try {
+      const result = await signIn("credentials", { email: "demo@clariva.com", password: "demo123", redirect: false })
+      if (result?.error) {
+        setError("Demo account unavailable. Please try the main login.")
+      } else {
+        router.push("/dashboard")
+      }
+    } catch {
+      setError("Something went wrong. Please try again.")
+    } finally {
+      setLoading(false)
+    }
+  }
+
   return (
     <div className="min-h-screen bg-background flex flex-col items-center justify-center px-4 py-12">
 
@@ -148,6 +165,27 @@ export default function LoginPage() {
               className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? "Signing in…" : "Sign in"}
+            </button>
+
+            {/* Divider */}
+            <div className="relative my-1">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full h-px bg-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-3 text-xs text-muted-foreground" style={{ background: "var(--card)" }}>or</span>
+              </div>
+            </div>
+
+            {/* Demo login */}
+            <button
+              type="button"
+              onClick={handleDemo}
+              disabled={loading}
+              className="w-full h-10 rounded-lg border text-sm font-medium transition-all hover:bg-muted active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-foreground"
+              style={{ border: "1px solid var(--border)" }}
+            >
+              View demo →
             </button>
           </form>
         </div>

@@ -1,7 +1,7 @@
 import { pool } from '@/lib/db'
 
 export interface RiskCalculation {
-  score: number
+  score: number  // 0 = no risk, 100 = maximum risk (matches UI's riskColor convention)
   label: 'Low' | 'Medium' | 'High'
   reason: string
   factors: {
@@ -16,7 +16,7 @@ export interface RiskCalculation {
 export async function calculateRiskScore(
   clientId: string,
   invoiceAmount: number,
-  dueDate: Date
+  _dueDate: Date
 ): Promise<RiskCalculation> {
   const [historyRes, outstandingRes] = await Promise.all([
     pool.query<{
@@ -46,11 +46,12 @@ export async function calculateRiskScore(
   const outstanding = Number(outstandingRes.rows[0].outstanding)
   const invoiceCount = Number(h.invoice_count)
 
+  // New client — neutral low risk
   if (invoiceCount === 0) {
     return {
-      score: 70,
+      score: 30,
       label: 'Low',
-      reason: 'New client with no payment history — scored neutral (70/100).',
+      reason: 'New client with no payment history. Risk scored conservatively at 30/100.',
       factors: { avgDaysLate: 0, latePct: 0, maxDaysLate: 0, outstanding, invoiceCount: 0 },
     }
   }
@@ -60,23 +61,21 @@ export async function calculateRiskScore(
   const lateCount   = Number(h.late_count)
   const latePct     = Math.round((lateCount / invoiceCount) * 100)
 
-  let score = 100
+  // Start at 0 (no risk), add penalties — score = risk percentage
+  let score = 0
 
-  // avg days late penalty
-  if (avgDaysLate > 30)      score -= 30
-  else if (avgDaysLate > 14) score -= 15
-  else if (avgDaysLate > 7)  score -= 10
+  if (avgDaysLate > 30)      score += 30
+  else if (avgDaysLate > 14) score += 15
+  else if (avgDaysLate > 7)  score += 10
 
-  // late payment rate penalty
-  if (latePct > 50)      score -= 20
-  else if (latePct > 25) score -= 10
+  if (latePct > 50)      score += 20
+  else if (latePct > 25) score += 10
 
-  // high existing outstanding relative to this invoice
-  if (outstanding > invoiceAmount * 2) score -= 15
+  if (outstanding > invoiceAmount * 2) score += 15
 
-  score = Math.max(0, Math.min(100, score))
+  score = Math.min(100, score)
 
-  const label: RiskCalculation['label'] = score >= 70 ? 'Low' : score >= 40 ? 'Medium' : 'High'
+  const label: RiskCalculation['label'] = score >= 70 ? 'High' : score >= 40 ? 'Medium' : 'Low'
 
   const parts: string[] = []
   if (avgDaysLate > 0)  parts.push(`avg ${Math.round(avgDaysLate)} days late`)
@@ -86,7 +85,7 @@ export async function calculateRiskScore(
 
   const reason = parts.length
     ? `${label} risk (${score}/100): ${parts.join(', ')}.`
-    : `${label} risk (${score}/100) — client pays on time consistently.`
+    : `${label} risk (${score}/100) — client has a strong on-time payment record.`
 
   return {
     score,

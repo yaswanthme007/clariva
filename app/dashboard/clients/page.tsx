@@ -10,7 +10,9 @@ import {
   TrendingUp,
   TrendingDown,
   Minus,
+  AlertCircle,
 } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -112,6 +114,7 @@ export default function ClientsPage() {
 
   const [clients, setClients] = useState<Client[]>([])
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState("")
   const [search, setSearch]   = useState("")
   const [addOpen, setAddOpen] = useState(false)
 
@@ -119,14 +122,21 @@ export default function ClientsPage() {
   const [newEmail, setNewEmail] = useState("")
   const [newPhone, setNewPhone] = useState("")
   const [saving,   setSaving]   = useState(false)
+  const [saveError, setSaveError] = useState("")
 
   const loadClients = useCallback(async () => {
     setLoading(true)
+    setError("")
     try {
       const res = await fetch("/api/clients")
-      if (!res.ok) return
+      if (!res.ok) {
+        setError("Failed to load clients. Please refresh the page.")
+        return
+      }
       const data = await res.json()
       setClients((data.clients ?? []).map(parseClient))
+    } catch {
+      setError("Something went wrong loading clients. Please try again.")
     } finally {
       setLoading(false)
     }
@@ -149,6 +159,7 @@ export default function ClientsPage() {
   async function addClient() {
     if (!newName || !newEmail) return
     setSaving(true)
+    setSaveError("")
     try {
       const res = await fetch("/api/clients", {
         method: "POST",
@@ -159,7 +170,11 @@ export default function ClientsPage() {
         setNewName(""); setNewEmail(""); setNewPhone("")
         setAddOpen(false)
         await loadClients()
+      } else {
+        setSaveError("Failed to save client. Please try again.")
       }
+    } catch {
+      setSaveError("Something went wrong. Please try again.")
     } finally {
       setSaving(false)
     }
@@ -187,6 +202,14 @@ export default function ClientsPage() {
           <span className="sm:hidden">Add</span>
         </button>
       </div>
+
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
 
       {/* Summary strip */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
@@ -238,6 +261,12 @@ export default function ClientsPage() {
                 className={inputCls} style={{ border: "1px solid var(--border)" }} />
             </div>
           </div>
+          {saveError && (
+            <div className="flex items-center gap-2 mt-3 rounded-lg px-3 py-2 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {saveError}
+            </div>
+          )}
           <div className="flex items-center gap-2 mt-5">
             <button
               onClick={addClient}
@@ -258,8 +287,33 @@ export default function ClientsPage() {
 
       {/* Client grid */}
       {loading ? (
-        <div className="bg-card rounded-xl px-6 py-16 text-center" style={{ border: "1px solid var(--border)" }}>
-          <p className="text-muted-foreground text-sm">Loading clients…</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="bg-card rounded-xl px-6 py-5 flex flex-col gap-4" style={{ border: "1px solid var(--border)" }}>
+              <div className="flex items-start justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-10 h-10 rounded-full" />
+                  <div className="flex flex-col gap-2">
+                    <Skeleton className="h-4 w-28" />
+                    <Skeleton className="h-3 w-36" />
+                  </div>
+                </div>
+                <Skeleton className="w-[72px] h-[72px] rounded-full" />
+              </div>
+              <div className="grid grid-cols-2 gap-3 pt-1" style={{ borderTop: "1px solid var(--border)" }}>
+                {[0, 1, 2, 3].map(j => (
+                  <div key={j}>
+                    <Skeleton className="h-3 w-20 mb-1.5" />
+                    <Skeleton className="h-4 w-16" />
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2 pt-0" style={{ borderTop: "1px solid var(--border)" }}>
+                <Skeleton className="h-7 w-16 rounded-md" />
+                <Skeleton className="h-7 w-24 rounded-md" />
+              </div>
+            </div>
+          ))}
         </div>
       ) : filtered.length === 0 ? (
         <div className="bg-card rounded-xl px-6 py-16 text-center" style={{ border: "1px solid var(--border)" }}>

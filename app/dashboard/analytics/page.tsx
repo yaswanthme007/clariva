@@ -1,7 +1,8 @@
 "use client"
 
 import { useMemo, useState, useEffect } from "react"
-import { Download } from "lucide-react"
+import { Download, AlertCircle } from "lucide-react"
+import { Skeleton } from "@/components/ui/skeleton"
 import {
   LineChart,
   Line,
@@ -78,18 +79,25 @@ function TooltipBox({ children }: { children: React.ReactNode }) {
 // ─── Component ────────────────────────────────────────────────────────────────
 
 export default function AnalyticsPage() {
-  const [range, setRange]   = useState<RangeKey>("30")
-  const [data, setData]     = useState<AnalyticsData | null>(null)
+  const [range, setRange]     = useState<RangeKey>("30")
+  const [data, setData]       = useState<AnalyticsData | null>(null)
   const [loading, setLoading] = useState(true)
+  const [error, setError]     = useState("")
 
   useEffect(() => {
     async function load() {
       setLoading(true)
+      setError("")
       try {
         const res = await fetch(`/api/analytics?days=${range}`)
-        if (!res.ok) return
+        if (!res.ok) {
+          setError("Failed to load analytics. Please try again.")
+          return
+        }
         const json: AnalyticsData = await res.json()
         setData(json)
+      } catch {
+        setError("Something went wrong loading analytics. Please try again.")
       } finally {
         setLoading(false)
       }
@@ -187,8 +195,29 @@ export default function AnalyticsPage() {
         </div>
       </div>
 
+      {/* Error banner */}
+      {error && (
+        <div className="flex items-center gap-2 rounded-lg px-4 py-3 text-sm text-rose-400 bg-rose-500/10" style={{ border: "1px solid rgba(244,63,94,0.2)" }}>
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          {error}
+        </div>
+      )}
+
       {/* Charts grid */}
-      <div className={`grid grid-cols-1 lg:grid-cols-2 gap-4 transition-opacity ${loading ? "opacity-50 pointer-events-none" : ""}`}>
+      {loading ? (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="bg-card rounded-xl p-6" style={{ border: "1px solid var(--border)" }}>
+              <div className="mb-5">
+                <Skeleton className="h-5 w-40 mb-2" />
+                <Skeleton className="h-3 w-52" />
+              </div>
+              <Skeleton className="h-64 w-full rounded-xl" />
+            </div>
+          ))}
+        </div>
+      ) : (
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* 1. Cash Flow line chart */}
         <ChartCard
@@ -337,6 +366,7 @@ export default function AnalyticsPage() {
           </p>
         </ChartCard>
       </div>
+      )}
     </div>
   )
 }

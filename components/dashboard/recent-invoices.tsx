@@ -84,7 +84,7 @@ export async function RecentInvoices() {
       id:     r.invoice_number,
       dbId:   r.id,
       client: r.client_name,
-      amount: "$" + Number(r.amount).toLocaleString("en-US"),
+      amount: new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(Number(r.amount)),
       due:    formatDate(r.due_date),
       status: capitalize(r.status) as Status,
       risk:   (r.risk_label ?? "Low") as Risk,

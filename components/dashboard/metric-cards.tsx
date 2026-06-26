@@ -60,7 +60,7 @@ export async function MetricCards() {
   }
 
   const fmtUSD = (n: number) =>
-    "$" + n.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(n)
 
   const METRICS: Metric[] = [
     {
