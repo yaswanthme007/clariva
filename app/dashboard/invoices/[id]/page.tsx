@@ -226,6 +226,7 @@ export default function InvoiceDetailPage() {
   const [fetchError,      setFetchError]      = useState("")
   const [status,          setStatus]          = useState<Status>("Pending")
   const [reminderData,    setReminderData]    = useState<{ subject: string; body: string } | null>(null)
+  const [reminderError,   setReminderError]   = useState("")
   const [generatingEmail, setGeneratingEmail] = useState(false)
   const [copied,          setCopied]          = useState(false)
   const [markPaidPhase,   setMarkPaidPhase]   = useState<"idle" | "confirming" | "saving">("idle")
@@ -307,21 +308,36 @@ export default function InvoiceDetailPage() {
   async function handleGenerateReminder() {
     if (!id) return
     setGeneratingEmail(true)
+    setReminderError("")
     try {
       const res = await fetch("/api/ai/reminder", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ invoiceId: id }),
       })
-      if (!res.ok) return
-      const { subject, body } = await res.json()
-      if (subject || body) {
-        setReminderData({ subject: subject ?? "", body: body ?? "" })
-        // Give React one tick to render the card, then scroll into view
-        setTimeout(() => {
-          reminderRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
-        }, 80)
+
+      let data: { subject?: string; body?: string; error?: string } = {}
+      try { data = await res.json() } catch { /* non-JSON body */ }
+
+      console.log("[reminder] status:", res.status, "response:", data)
+
+      if (!res.ok) {
+        setReminderError(data.error ?? `Error ${res.status} — please try again`)
+        return
       }
+
+      const subject = data.subject ?? ""
+      const body    = data.body    ?? ""
+      console.log("[reminder] setReminderData →", { subject: subject.slice(0, 80), bodyLen: body.length })
+
+      setReminderData({ subject, body })
+      // Give React one tick to mount the card, then scroll into view
+      setTimeout(() => {
+        reminderRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+      }, 80)
+    } catch (err) {
+      console.error("[reminder] network error:", err)
+      setReminderError("Network error — please check your connection and try again")
     } finally {
       setGeneratingEmail(false)
     }
@@ -609,6 +625,23 @@ export default function InvoiceDetailPage() {
 
         </div>
       </div>
+
+      {/* ── Reminder error ────────────────────────────────────────────────────── */}
+      {reminderError && (
+        <div
+          className="flex items-center gap-2 rounded-xl px-5 py-3.5 text-sm text-rose-400 bg-rose-500/10"
+          style={{ border: "1px solid rgba(244,63,94,0.25)" }}
+        >
+          <AlertCircle className="w-4 h-4 shrink-0" />
+          <span>{reminderError}</span>
+          <button
+            onClick={() => setReminderError("")}
+            className="ml-auto text-muted-foreground hover:text-foreground transition-colors text-xs"
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
 
       {/* ── AI-Generated Reminder ──────────────────────────────────────────────── */}
       {reminderData && (

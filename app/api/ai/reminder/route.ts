@@ -31,20 +31,24 @@ export async function POST(req: NextRequest) {
     style: 'currency', currency: invoice.currency ?? 'USD',
   })
 
-  const completion = await groq.chat.completions.create({
-    model: 'llama-3.3-70b-versatile',
-    temperature: 0.4,
-    max_tokens: 400,
-    response_format: { type: 'json_object' },
-    messages: [
-      {
-        role: 'system',
-        content:
-          'You are a professional business communication assistant. Write firm but polite payment reminder emails under 150 words. Return ONLY valid JSON with "subject" and "body" string keys.',
-      },
-      {
-        role: 'user',
-        content: `Write a payment reminder email:
+  let subject = `Payment Reminder: ${invoice.invoice_number}`
+  let body = ''
+
+  try {
+    const completion = await groq.chat.completions.create({
+      model: 'llama-3.3-70b-versatile',
+      temperature: 0.4,
+      max_tokens: 400,
+      response_format: { type: 'json_object' },
+      messages: [
+        {
+          role: 'system',
+          content:
+            'You are a professional business communication assistant. Write firm but polite payment reminder emails under 150 words. Return ONLY valid JSON with "subject" and "body" string keys.',
+        },
+        {
+          role: 'user',
+          content: `Write a payment reminder email:
 Client name: ${invoice.client_name}
 Invoice number: ${invoice.invoice_number}
 Amount due: ${amount}
@@ -53,20 +57,21 @@ Days overdue: ${daysOverdue}
 Description: ${invoice.description ?? 'Professional services'}
 
 Return JSON: {"subject": "...", "body": "..."}`,
-      },
-    ],
-  })
+        },
+      ],
+    })
 
-  const raw = completion.choices[0]?.message?.content?.trim() ?? '{}'
-  let subject = `Payment Reminder: ${invoice.invoice_number}`
-  let body = ''
-
-  try {
-    const parsed = JSON.parse(raw)
-    subject = parsed.subject ?? subject
-    body    = parsed.body ?? ''
-  } catch {
-    body = raw
+    const raw = completion.choices[0]?.message?.content?.trim() ?? '{}'
+    try {
+      const parsed = JSON.parse(raw)
+      subject = parsed.subject ?? subject
+      body    = parsed.body    ?? ''
+    } catch {
+      body = raw
+    }
+  } catch (err) {
+    console.error('[reminder] Groq error:', err)
+    return NextResponse.json({ error: 'AI service unavailable — please try again shortly' }, { status: 502 })
   }
 
   try {
