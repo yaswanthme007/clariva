@@ -134,14 +134,14 @@ export function Hero() {
                 style={{ animationDelay: '360ms' }}
               >
                 <Link
-                  href="#"
+                  href="/register"
                   className="btn-scale w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-primary text-primary-foreground font-medium px-6 py-3 text-sm hover:bg-gray-100"
                 >
                   Start for free
                   <ArrowRight className="w-4 h-4" />
                 </Link>
                 <Link
-                  href="#"
+                  href="/login"
                   className="btn-scale w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-border bg-card text-foreground font-medium px-6 py-3 text-sm hover:bg-muted transition-colors"
                 >
                   <span className="flex items-center justify-center w-6 h-6 rounded-full bg-primary/10 text-primary">

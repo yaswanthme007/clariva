@@ -31,18 +31,18 @@ export function CtaBanner() {
         </p>
         <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
           <Link
-            href="#"
+            href="/register"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg bg-white text-zinc-900 font-semibold px-7 py-3.5 text-sm hover:bg-zinc-100 transition-all duration-200 hover:scale-[1.02]"
           >
             Start for free
             <ArrowRight className="w-4 h-4" />
           </Link>
-          <Link
-            href="#"
+          <a
+            href="mailto:hello@clariva.com"
             className="w-full sm:w-auto inline-flex items-center justify-center gap-2 rounded-lg border border-zinc-700 text-zinc-200 font-medium px-7 py-3.5 text-sm hover:border-zinc-500 hover:text-white transition-all duration-200 hover:scale-[1.02]"
           >
             Talk to sales
-          </Link>
+          </a>
         </div>
         <p className="mt-6 text-zinc-600 text-xs">
           Free 14-day trial · No credit card required · Cancel anytime

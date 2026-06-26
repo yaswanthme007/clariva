@@ -111,7 +111,7 @@ export function Navbar() {
             {/* Desktop CTA buttons */}
             <div className="hidden md:flex items-center gap-3">
               <Link
-                href="#"
+                href="/login"
                 className={`text-sm font-medium transition-colors duration-200 px-1 btn-scale ${
                   scrolled ? 'text-foreground hover:text-primary' : 'text-white/85 hover:text-white'
                 }`}
@@ -119,7 +119,7 @@ export function Navbar() {
                 Login
               </Link>
               <Link
-                href="#"
+                href="/register"
                 className="inline-flex items-center justify-center rounded-lg bg-primary text-primary-foreground text-sm font-medium px-4 py-2 hover:bg-gray-100 btn-scale"
               >
                 Get Started
@@ -156,13 +156,13 @@ export function Navbar() {
             ))}
             <div className="flex flex-col gap-3 pt-2 border-t border-border">
               <Link
-                href="#"
+                href="/login"
                 className="text-sm font-medium text-foreground text-center py-2 border border-border rounded-lg hover:bg-muted transition-colors duration-200"
               >
                 Login
               </Link>
               <Link
-                href="#"
+                href="/register"
                 className="text-sm font-medium text-center py-2 rounded-lg bg-primary text-primary-foreground hover:bg-gray-100 transition-colors duration-200"
               >
                 Get Started
