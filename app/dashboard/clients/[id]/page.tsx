@@ -1,6 +1,6 @@
 "use client"
 
-import { use, useMemo, useState, useEffect } from "react"
+import { use, useMemo, useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import {
   ArrowLeft,
@@ -11,6 +11,7 @@ import {
   TrendingDown,
   Minus,
   ExternalLink,
+  Sparkles,
 } from "lucide-react"
 import {
   BarChart,
@@ -184,9 +185,12 @@ function DaysTooltip({ active, payload, label }: { active?: boolean; payload?: {
 export default function ClientDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
 
-  const [client, setClient]   = useState<ClientRecord | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [search, setSearch]   = useState("")
+  const [client, setClient]           = useState<ClientRecord | null>(null)
+  const [loading, setLoading]         = useState(true)
+  const [search, setSearch]           = useState("")
+  const [assessment, setAssessment]   = useState("")
+  const [assLoading, setAssLoading]   = useState(false)
+  const assCalledRef                  = useRef(false)
 
   useEffect(() => {
     async function load() {
@@ -202,6 +206,22 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
     }
     if (id) load()
   }, [id])
+
+  // Fetch AI assessment once client data is loaded
+  useEffect(() => {
+    if (!client || assCalledRef.current) return
+    assCalledRef.current = true
+    setAssLoading(true)
+    fetch("/api/ai/client-assessment", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ clientId: client.id }),
+    })
+      .then(r => r.ok ? r.json() : null)
+      .then(json => { if (json?.assessment) setAssessment(json.assessment) })
+      .catch(() => {})
+      .finally(() => setAssLoading(false))
+  }, [client])
 
   const filteredInvoices = useMemo(
     () => (client?.invoices ?? []).filter(inv => !search || inv.id.toLowerCase().includes(search.toLowerCase())),
@@ -416,6 +436,41 @@ export default function ClientDetailPage({ params }: { params: Promise<{ id: str
           <div className="px-6 py-12 text-center text-sm text-muted-foreground">No invoices match your search.</div>
         )}
       </div>
+
+      {/* AI Assessment */}
+      <div className="bg-card rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
+        <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center">
+              <Sparkles className="w-3.5 h-3.5 text-primary" />
+            </div>
+            <h2 className="text-sm font-semibold text-foreground">AI Client Assessment</h2>
+          </div>
+          <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+            <Sparkles className="w-3 h-3" />
+            AI Generated
+          </span>
+        </div>
+        <div className="px-6 py-5">
+          {assLoading ? (
+            <div className="flex flex-col gap-3">
+              <p className="text-xs text-muted-foreground animate-pulse">Analyzing payment behavior…</p>
+              <div className="h-4 rounded bg-muted animate-pulse w-full" />
+              <div className="h-4 rounded bg-muted animate-pulse w-5/6" />
+              <div className="h-4 rounded bg-muted animate-pulse w-4/5" />
+            </div>
+          ) : assessment ? (
+            <p className="text-sm text-muted-foreground leading-relaxed">{assessment}</p>
+          ) : (
+            <div className="py-6 flex flex-col items-center gap-2">
+              <Sparkles className="w-6 h-6 text-muted-foreground" />
+              <p className="text-sm text-muted-foreground">No assessment available yet</p>
+              <p className="text-xs text-muted-foreground">Add invoices and payment history to generate an AI assessment</p>
+            </div>
+          )}
+        </div>
+      </div>
+
     </div>
   )
 }

@@ -4,6 +4,7 @@ import { Plus } from "lucide-react"
 import { MetricCards }    from "@/components/dashboard/metric-cards"
 import { CashFlowChart }  from "@/components/dashboard/cash-flow-chart"
 import { RecentInvoices } from "@/components/dashboard/recent-invoices"
+import { AiInsights }     from "@/components/dashboard/ai-insights"
 import { Skeleton }        from "@/components/ui/skeleton"
 
 function MetricCardsSkeleton() {
@@ -85,6 +86,9 @@ export default function DashboardPage() {
       <Suspense fallback={<RecentInvoicesSkeleton />}>
         <RecentInvoices />
       </Suspense>
+
+      {/* AI Insights */}
+      <AiInsights />
 
     </div>
   )

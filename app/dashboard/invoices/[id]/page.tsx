@@ -54,6 +54,53 @@ interface InvoiceData {
   timeline: PaymentEvent[]
 }
 
+// ─── Confetti ─────────────────────────────────────────────────────────────────
+
+const CONFETTI_COLORS = ["#10b981", "#f59e0b", "#3b82f6", "#8b5cf6", "#f43f5e", "#ec4899"]
+const CONFETTI_PIECES = Array.from({ length: 54 }, (_, i) => ({
+  id: i,
+  left: `${(i * 1.85 + (i % 7) * 5.1) % 100}%`,
+  delay: `${(i * 0.043) % 0.7}s`,
+  duration: `${1.9 + (i % 5) * 0.18}s`,
+  color: CONFETTI_COLORS[i % CONFETTI_COLORS.length],
+  w: 5 + (i % 6),
+  h: 3 + (i % 4),
+  radius: i % 3 === 0 ? "50%" : "2px",
+  rot: (i * 47) % 360,
+}))
+
+function ConfettiExplosion() {
+  return (
+    <>
+      <style>{`
+        @keyframes confettiFall {
+          0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+          80%  { opacity: 0.9; }
+          100% { transform: translateY(96vh) rotate(600deg); opacity: 0; }
+        }
+      `}</style>
+      <div className="fixed inset-0 pointer-events-none z-50 overflow-hidden" aria-hidden="true">
+        {CONFETTI_PIECES.map(p => (
+          <div
+            key={p.id}
+            style={{
+              position: "absolute",
+              left: p.left,
+              top: "-8px",
+              width: p.w,
+              height: p.h,
+              background: p.color,
+              borderRadius: p.radius,
+              transform: `rotate(${p.rot}deg)`,
+              animation: `confettiFall ${p.duration} ${p.delay} ease-in forwards`,
+            }}
+          />
+        ))}
+      </div>
+    </>
+  )
+}
+
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
 const fmt = (n: number) =>
@@ -174,21 +221,19 @@ const EVENT_ICON: Record<PaymentEvent["type"], React.ReactNode> = {
 export default function InvoiceDetailPage() {
   const { id } = useParams<{ id: string }>()
 
-  const [invoice,        setInvoice]        = useState<InvoiceData | null>(null)
-  const [loading,        setLoading]        = useState(true)
-  const [fetchError,     setFetchError]     = useState("")
-  const [status,         setStatus]         = useState<Status>("Pending")
-  const [emailOpen,      setEmailOpen]      = useState(false)
-  const [emailBody,      setEmailBody]      = useState("")
-  const [aiEmailSubject, setAiEmailSubject] = useState<string | null>(null)
-  const [generatingEmail,setGeneratingEmail]= useState(false)
-  const [editingEmail,   setEditingEmail]   = useState(false)
-  const [copied,         setCopied]         = useState(false)
-  const [markPaidOpen,   setMarkPaidOpen]   = useState(false)
-  const [paidDate,       setPaidDate]       = useState("")
-  const [saving,         setSaving]         = useState(false)
+  const [invoice,         setInvoice]         = useState<InvoiceData | null>(null)
+  const [loading,         setLoading]         = useState(true)
+  const [fetchError,      setFetchError]      = useState("")
+  const [status,          setStatus]          = useState<Status>("Pending")
+  const [emailOpen,       setEmailOpen]       = useState(false)
+  const [emailBody,       setEmailBody]       = useState("")
+  const [aiEmailSubject,  setAiEmailSubject]  = useState<string | null>(null)
+  const [generatingEmail, setGeneratingEmail] = useState(false)
+  const [editingEmail,    setEditingEmail]    = useState(false)
+  const [copied,          setCopied]          = useState(false)
+  const [markPaidPhase,   setMarkPaidPhase]   = useState<"idle" | "confirming" | "saving">("idle")
+  const [showConfetti,    setShowConfetti]    = useState(false)
 
-  // Prevent firing risk endpoint more than once per page load
   const riskCalledRef = useRef(false)
 
   function buildEmailBody(inv: InvoiceData): string {
@@ -208,12 +253,9 @@ Invoice details:
 
 Thank you for your prompt attention.
 
-Best regards,
-Jamie Davis
-Acme Studio`
+Best regards`
   }
 
-  // Load invoice
   useEffect(() => {
     if (!id) return
     async function load() {
@@ -240,7 +282,6 @@ Acme Studio`
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
-  // Auto-refresh risk score with Groq explanation once invoice is loaded
   useEffect(() => {
     if (!id || !invoice || riskCalledRef.current) return
     riskCalledRef.current = true
@@ -287,18 +328,19 @@ Acme Studio`
   }
 
   async function confirmPaid() {
-    if (!paidDate || !id) return
-    setSaving(true)
+    if (!id) return
+    setMarkPaidPhase("saving")
     try {
       const res = await fetch(`/api/invoices/${id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: "paid", paid_date: paidDate }),
+        body: JSON.stringify({ status: "paid", paid_date: new Date().toISOString().slice(0, 10) }),
       })
-      if (!res.ok) return
+      if (!res.ok) { setMarkPaidPhase("idle"); return }
       setStatus("Paid")
-      setMarkPaidOpen(false)
-      // Reload full invoice (GET includes client_name/client_email from JOIN)
+      setMarkPaidPhase("idle")
+      setShowConfetti(true)
+      setTimeout(() => setShowConfetti(false), 3000)
       const getRes = await fetch(`/api/invoices/${id}`)
       if (getRes.ok) {
         const { invoice: raw } = await getRes.json()
@@ -306,8 +348,8 @@ Acme Studio`
         setInvoice(parsed)
         setStatus(parsed.status)
       }
-    } finally {
-      setSaving(false)
+    } catch {
+      setMarkPaidPhase("idle")
     }
   }
 
@@ -374,6 +416,8 @@ Acme Studio`
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full max-w-5xl mx-auto w-full">
 
+      {showConfetti && <ConfettiExplosion />}
+
       {/* Back link + header */}
       <div>
         <Link
@@ -410,13 +454,30 @@ Acme Studio`
                 <><Mail className="w-4 h-4" /> Generate Reminder</>
               )}
             </button>
+
             {status !== "Paid" && (
               <button
-                onClick={() => setMarkPaidOpen(v => !v)}
-                className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-500 text-emerald-950 hover:bg-emerald-400 transition-colors"
+                onClick={() => {
+                  if (markPaidPhase === "idle") {
+                    setMarkPaidPhase("confirming")
+                    setTimeout(() => setMarkPaidPhase(p => p === "confirming" ? "idle" : p), 5000)
+                  } else if (markPaidPhase === "confirming") {
+                    confirmPaid()
+                  }
+                }}
+                disabled={markPaidPhase === "saving"}
+                className={`flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold transition-all active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed ${
+                  markPaidPhase === "confirming"
+                    ? "bg-amber-500 text-amber-950 animate-pulse hover:bg-amber-400"
+                    : "bg-emerald-500 text-emerald-950 hover:bg-emerald-400"
+                }`}
               >
-                <CheckCircle className="w-4 h-4" />
-                Mark as Paid
+                {markPaidPhase === "saving"
+                  ? <><Loader2 className="w-4 h-4 animate-spin" /> Saving…</>
+                  : markPaidPhase === "confirming"
+                  ? <><Check className="w-4 h-4" /> Confirm Payment?</>
+                  : <><CheckCircle className="w-4 h-4" /> Mark as Paid</>
+                }
               </button>
             )}
           </div>
@@ -444,38 +505,6 @@ Acme Studio`
           </div>
         </div>
       </div>
-
-      {/* Mark as Paid panel */}
-      {markPaidOpen && (
-        <div className="bg-emerald-500/10 rounded-xl px-6 py-5 flex flex-col sm:flex-row sm:items-end gap-4" style={{ border: "1px solid rgba(16,185,129,0.2)" }}>
-          <div className="flex-1">
-            <p className="text-sm font-semibold text-emerald-400 mb-2">Confirm payment received</p>
-            <label className="block text-xs text-emerald-400/80 mb-1">Date payment received</label>
-            <input
-              type="date"
-              value={paidDate}
-              onChange={e => setPaidDate(e.target.value)}
-              className="h-9 px-3 rounded-lg text-sm bg-card text-foreground focus:outline-none focus:ring-2 focus:ring-emerald-400/40 transition-shadow"
-              style={{ border: "1px solid rgba(16,185,129,0.25)" }}
-            />
-          </div>
-          <div className="flex gap-2">
-            <button
-              onClick={() => setMarkPaidOpen(false)}
-              className="h-9 px-4 rounded-lg text-sm font-medium border border-border text-muted-foreground bg-card hover:bg-muted transition-colors"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={confirmPaid}
-              disabled={!paidDate || saving}
-              className="h-9 px-4 rounded-lg text-sm font-semibold bg-emerald-500 text-emerald-950 hover:bg-emerald-400 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-            >
-              {saving ? "Saving…" : "Confirm"}
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Reminder email panel */}
       {emailOpen && (

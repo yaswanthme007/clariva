@@ -328,7 +328,8 @@ export default function ClientsPage() {
             return (
               <div
                 key={client.dbId}
-                className="group bg-card rounded-xl px-6 py-5 flex flex-col gap-4 hover:shadow-sm transition-shadow"
+                onClick={() => router.push(`/dashboard/clients/${client.dbId}`)}
+                className="group bg-card rounded-xl px-6 py-5 flex flex-col gap-4 hover:shadow-sm hover:border-white/20 transition-all cursor-pointer"
                 style={{ border: "1px solid var(--border)" }}
               >
                 {/* Top row: avatar + name + score circle */}
@@ -379,6 +380,7 @@ export default function ClientsPage() {
                 <div className="flex items-center gap-2 pt-0" style={{ borderTop: "1px solid var(--border)" }}>
                   <a
                     href={`mailto:${client.email}`}
+                    onClick={e => e.stopPropagation()}
                     className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                     title={client.email}
                   >
@@ -386,11 +388,11 @@ export default function ClientsPage() {
                     Email
                   </a>
                   <button
-                    onClick={() => router.push(`/dashboard/clients/${client.dbId}`)}
+                    onClick={e => { e.stopPropagation(); router.push(`/dashboard/clients/${client.dbId}`) }}
                     className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
                   >
                     <ExternalLink className="w-3 h-3" />
-                    View Invoices
+                    View Profile
                   </button>
                 </div>
               </div>
