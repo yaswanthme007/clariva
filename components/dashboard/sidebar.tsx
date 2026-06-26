@@ -3,7 +3,7 @@
 import Link from "next/link"
 import { usePathname } from "next/navigation"
 import { useState } from "react"
-import { signOut } from "next-auth/react"
+import { signOut, useSession } from "next-auth/react"
 import {
   LayoutDashboard,
   FileText,
@@ -25,6 +25,17 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname()
   const [mobileOpen, setMobileOpen] = useState(false)
+  const { data: session } = useSession()
+
+  const userName  = session?.user?.name ?? session?.user?.email ?? ""
+  const userEmail = session?.user?.email ?? ""
+  const initials  = userName
+    .split(" ")
+    .filter(Boolean)
+    .map(n => n[0])
+    .join("")
+    .slice(0, 2)
+    .toUpperCase() || userEmail.slice(0, 2).toUpperCase() || "?"
 
   const content = (
     <div className="flex flex-col h-full">
@@ -64,11 +75,15 @@ export function Sidebar() {
       <div className="px-3 py-4 shrink-0" style={{ borderTop: "1px solid var(--border)" }}>
         <div className="flex items-center gap-3 px-3 py-2.5 rounded-lg">
           <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-            <span className="text-xs font-semibold text-primary">JD</span>
+            <span className="text-xs font-semibold text-primary">{initials}</span>
           </div>
           <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-foreground truncate">Jamie Davis</p>
-            <p className="text-xs text-muted-foreground truncate">jamie@acmestudio.co</p>
+            <p className="text-sm font-medium text-foreground truncate">
+              {session?.user?.name ?? session?.user?.email ?? "Loading…"}
+            </p>
+            <p className="text-xs text-muted-foreground truncate">
+              {userEmail}
+            </p>
           </div>
         </div>
         <button

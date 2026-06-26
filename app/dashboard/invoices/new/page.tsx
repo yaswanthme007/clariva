@@ -109,7 +109,8 @@ export default function NewInvoicePage() {
   const router = useRouter()
 
   // Real clients from API
-  const [apiClients, setApiClients] = useState<ApiClient[]>([])
+  const [apiClients, setApiClients]     = useState<ApiClient[]>([])
+  const [clientsLoaded, setClientsLoaded] = useState(false)
 
   useEffect(() => {
     fetch("/api/clients")
@@ -117,6 +118,7 @@ export default function NewInvoicePage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       .then(data => setApiClients((data.clients ?? []).map((c: any) => ({ id: c.id, name: c.name }))))
       .catch(() => {})
+      .finally(() => setClientsLoaded(true))
   }, [])
 
   // AI extract
@@ -262,7 +264,7 @@ export default function NewInvoicePage() {
     }
   }
 
-  const clientNames = apiClients.map(c => c.name)
+  const clientNames = apiClients.map(c => c.name) // kept for AI extract matching
   const fmtCurrency = (n: number) =>
     new Intl.NumberFormat("en-US", { style: "currency", currency, minimumFractionDigits: 2 }).format(n)
 
@@ -337,13 +339,52 @@ export default function NewInvoicePage() {
         <div className="p-6 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
           <div>
             <Label htmlFor="client">Client</Label>
-            <Select
-              id="client"
-              value={client}
-              onChange={setClient}
-              options={clientNames}
-              placeholder={clientNames.length === 0 ? "Loading clients…" : "Select a client…"}
-            />
+            {!clientsLoaded ? (
+              <div
+                className="w-full h-9 rounded-lg animate-pulse bg-muted"
+                style={{ border: "1px solid var(--border)" }}
+              />
+            ) : apiClients.length === 0 ? (
+              <div className="flex items-center gap-2">
+                <div
+                  className="flex-1 h-9 rounded-lg flex items-center px-3 text-sm text-muted-foreground select-none"
+                  style={{ border: "1px solid var(--border)" }}
+                >
+                  No clients yet
+                </div>
+                <Link
+                  href="/dashboard/clients"
+                  className="h-9 px-3 rounded-lg text-sm font-semibold bg-primary text-primary-foreground hover:bg-gray-100 flex items-center gap-1.5 transition-colors shrink-0"
+                >
+                  <Plus className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  Add Client
+                </Link>
+              </div>
+            ) : (
+              <div className="relative">
+                <select
+                  id="client"
+                  value={client}
+                  onChange={(e) => {
+                    if (e.target.value === "__add_new__") {
+                      router.push("/dashboard/clients")
+                      return
+                    }
+                    setClient(e.target.value)
+                  }}
+                  className="w-full h-9 pl-3 pr-8 rounded-lg text-sm bg-card text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
+                  style={{ border: "1px solid var(--border)" }}
+                >
+                  <option value="">Select a client…</option>
+                  {apiClients.map(c => (
+                    <option key={c.id} value={c.name}>{c.name}</option>
+                  ))}
+                  <option disabled>──────────────</option>
+                  <option value="__add_new__">+ Add new client</option>
+                </select>
+                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+              </div>
+            )}
           </div>
           <div>
             <Label htmlFor="invoiceNum">Invoice Number</Label>
