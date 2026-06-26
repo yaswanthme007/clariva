@@ -40,7 +40,7 @@ export async function getRevenueByPeriod(
     const { rows } = await pool.query<RevenuePeriod>(
       `SELECT
          to_char(date_trunc('${g}', due_date), 'YYYY-MM-DD') AS period,
-         COALESCE(SUM(amount), 0)::float AS expected,
+         COALESCE(SUM(CASE WHEN status NOT IN ('paid', 'cancelled') THEN amount ELSE 0 END), 0)::float AS expected,
          COALESCE(SUM(CASE WHEN status = 'paid' THEN COALESCE(paid_amount, amount) ELSE 0 END), 0)::float AS actual
        FROM invoices
        WHERE user_id = $1 AND due_date >= $2::date AND due_date <= $3::date

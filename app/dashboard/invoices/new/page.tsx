@@ -1,6 +1,6 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import { useState, useEffect, useRef } from "react"
 import Link from "next/link"
 import { useRouter } from "next/navigation"
 import {
@@ -109,7 +109,7 @@ export default function NewInvoicePage() {
   const router = useRouter()
 
   // Real clients from API
-  const [apiClients, setApiClients]     = useState<ApiClient[]>([])
+  const [apiClients, setApiClients]       = useState<ApiClient[]>([])
   const [clientsLoaded, setClientsLoaded] = useState(false)
 
   useEffect(() => {
@@ -119,6 +119,27 @@ export default function NewInvoicePage() {
       .then(data => setApiClients((data.clients ?? []).map((c: any) => ({ id: c.id, name: c.name }))))
       .catch(() => {})
       .finally(() => setClientsLoaded(true))
+  }, [])
+
+  // Custom client dropdown state
+  const [clientOpen, setClientOpen]       = useState(false)
+  const clientDropdownRef                 = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (clientDropdownRef.current && !clientDropdownRef.current.contains(e.target as Node)) {
+        setClientOpen(false)
+      }
+    }
+    function handleEscape(e: KeyboardEvent) {
+      if (e.key === "Escape") setClientOpen(false)
+    }
+    document.addEventListener("mousedown", handleClickOutside)
+    document.addEventListener("keydown", handleEscape)
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside)
+      document.removeEventListener("keydown", handleEscape)
+    }
   }, [])
 
   // AI extract
@@ -361,28 +382,58 @@ export default function NewInvoicePage() {
                 </Link>
               </div>
             ) : (
-              <div className="relative">
-                <select
+              <div className="relative" ref={clientDropdownRef}>
+                <button
                   id="client"
-                  value={client}
-                  onChange={(e) => {
-                    if (e.target.value === "__add_new__") {
-                      router.push("/dashboard/clients")
-                      return
-                    }
-                    setClient(e.target.value)
-                  }}
-                  className="w-full h-9 pl-3 pr-8 rounded-lg text-sm bg-card text-foreground appearance-none focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
+                  type="button"
+                  onClick={() => setClientOpen(o => !o)}
+                  className="w-full h-9 pl-3 pr-8 rounded-lg text-sm bg-card text-left flex items-center focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
                   style={{ border: "1px solid var(--border)" }}
                 >
-                  <option value="">Select a client…</option>
-                  {apiClients.map(c => (
-                    <option key={c.id} value={c.name}>{c.name}</option>
-                  ))}
-                  <option disabled>──────────────</option>
-                  <option value="__add_new__">+ Add new client</option>
-                </select>
-                <ChevronDown className="pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground" />
+                  <span className={client ? "text-foreground" : "text-muted-foreground"}>
+                    {client || "Select a client…"}
+                  </span>
+                  <ChevronDown
+                    className={`pointer-events-none absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-muted-foreground transition-transform duration-150 ${clientOpen ? "rotate-180" : ""}`}
+                  />
+                </button>
+                {clientOpen && (
+                  <div
+                    className="absolute z-50 mt-1 w-full rounded-lg py-1 shadow-xl overflow-hidden"
+                    style={{ background: "var(--card)", border: "1px solid var(--border)" }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => { setClient(""); setClientOpen(false) }}
+                      className="w-full h-8 px-3 text-left text-sm text-muted-foreground hover:bg-white/5 transition-colors"
+                    >
+                      Select a client…
+                    </button>
+                    {apiClients.map(c => (
+                      <button
+                        key={c.id}
+                        type="button"
+                        onClick={() => { setClient(c.name); setClientOpen(false) }}
+                        className={`w-full h-8 px-3 text-left text-sm transition-colors hover:bg-white/5 ${
+                          client === c.name
+                            ? "text-foreground font-medium bg-white/5"
+                            : "text-foreground"
+                        }`}
+                      >
+                        {c.name}
+                      </button>
+                    ))}
+                    <div className="my-1 border-t" style={{ borderColor: "var(--border)" }} />
+                    <button
+                      type="button"
+                      onClick={() => router.push("/dashboard/clients")}
+                      className="w-full h-8 px-3 text-left text-sm text-primary hover:bg-white/5 transition-colors flex items-center gap-1.5"
+                    >
+                      <Plus className="w-3 h-3" strokeWidth={2.5} />
+                      Add new client
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>
