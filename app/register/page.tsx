@@ -4,6 +4,7 @@ import Link from "next/link"
 import { useState } from "react"
 import { Eye, EyeOff, Zap, AlertCircle, CheckCircle2 } from "lucide-react"
 import { useRouter } from "next/navigation"
+import { signIn } from "next-auth/react"
 
 interface FormState {
   fullName: string
@@ -101,6 +102,13 @@ export default function RegisterPage() {
     } finally {
       setLoading(false)
     }
+  }
+
+  async function handleDemo() {
+    setError("")
+    setLoading(true)
+    await signIn("credentials", { email: "demo@clariva.com", password: "demo123", redirect: true, callbackUrl: "/dashboard" })
+    setLoading(false)
   }
 
   const passwordsMatch =
@@ -275,6 +283,27 @@ export default function RegisterPage() {
               className="w-full h-10 rounded-lg bg-primary text-primary-foreground text-sm font-semibold mt-1 transition-all hover:bg-gray-100 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? "Creating account…" : "Create account"}
+            </button>
+
+            {/* Divider */}
+            <div className="relative my-1">
+              <div className="absolute inset-0 flex items-center">
+                <div className="w-full h-px bg-border" />
+              </div>
+              <div className="relative flex justify-center">
+                <span className="px-3 text-xs text-muted-foreground" style={{ background: "var(--card)" }}>or</span>
+              </div>
+            </div>
+
+            {/* Demo login */}
+            <button
+              type="button"
+              onClick={handleDemo}
+              disabled={loading}
+              className="w-full h-10 rounded-lg border text-sm font-medium transition-all hover:bg-muted active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-foreground"
+              style={{ border: "1px solid var(--border)" }}
+            >
+              {loading ? "Signing in…" : "View demo →"}
             </button>
 
             {/* Terms */}
