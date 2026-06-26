@@ -1,18 +1,26 @@
 "use client"
 
 import Link from "next/link"
-import { useState } from "react"
+import { Suspense, useState } from "react"
+import { useSearchParams } from "next/navigation"
 import { Eye, EyeOff, Zap, AlertCircle } from "lucide-react"
 import { signIn } from "next-auth/react"
-import { useRouter } from "next/navigation"
 
-export default function LoginPage() {
-  const router = useRouter()
+const AUTH_ERROR_MESSAGES: Record<string, string> = {
+  CredentialsSignin: "Invalid email or password.",
+  default: "Something went wrong. Please try again.",
+}
+
+function LoginForm() {
+  const searchParams = useSearchParams()
+  const urlError = searchParams.get("error")
+  const urlErrorMsg = urlError ? (AUTH_ERROR_MESSAGES[urlError] ?? AUTH_ERROR_MESSAGES.default) : ""
+
   const [showPassword, setShowPassword] = useState(false)
-  const [email, setEmail] = useState("")
-  const [password, setPassword] = useState("")
-  const [error, setError] = useState("")
-  const [loading, setLoading] = useState(false)
+  const [email, setEmail]               = useState("")
+  const [password, setPassword]         = useState("")
+  const [error, setError]               = useState(urlErrorMsg)
+  const [loading, setLoading]           = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -22,18 +30,8 @@ export default function LoginPage() {
     }
     setError("")
     setLoading(true)
-    try {
-      const result = await signIn("credentials", { email, password, redirect: false })
-      if (result?.error) {
-        setError("Invalid email or password.")
-      } else {
-        router.push("/dashboard")
-      }
-    } catch {
-      setError("Something went wrong. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+    await signIn("credentials", { email, password, redirect: true, callbackUrl: "/dashboard" })
+    setLoading(false)
   }
 
   async function handleDemo() {
@@ -109,12 +107,7 @@ export default function LoginPage() {
                 <label htmlFor="password" className="text-sm font-medium text-foreground">
                   Password
                 </label>
-                <Link
-                  href="#"
-                  className="text-xs text-primary hover:text-foreground transition-colors"
-                >
-                  Forgot password?
-                </Link>
+                <span className="text-xs text-muted-foreground">Forgot password?</span>
               </div>
               <div className="relative">
                 <input
@@ -175,7 +168,7 @@ export default function LoginPage() {
               className="w-full h-10 rounded-lg border text-sm font-medium transition-all hover:bg-muted active:scale-[0.98] disabled:opacity-60 disabled:cursor-not-allowed text-foreground"
               style={{ border: "1px solid var(--border)" }}
             >
-              View demo →
+              {loading ? "Signing in…" : "View demo →"}
             </button>
           </form>
         </div>
@@ -190,5 +183,13 @@ export default function LoginPage() {
 
       </div>
     </div>
+  )
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense>
+      <LoginForm />
+    </Suspense>
   )
 }
