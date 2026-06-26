@@ -5,25 +5,57 @@ import {
   getInvoiceStatusBreakdown,
   getTopClientsByRevenue,
   getPaymentTimelinessDistribution,
+  getRiskDistribution,
 } from '@/lib/db'
 
 export async function GET(req: NextRequest) {
-  const session = await auth()
-  if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
-  const userId = session.user.id
+  try {
+    const session = await auth()
+    if (!session?.user?.id) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    const userId = session.user.id
 
-  const days = Math.min(365, Math.max(1, Number(req.nextUrl.searchParams.get('days') ?? '30')))
-  const endDate   = new Date()
-  const startDate = new Date(Date.now() - days * 86_400_000)
-  const granularity = days > 60 ? 'month' : 'week'
-  const startDateStr = startDate.toISOString().slice(0, 10)
+    const days = Math.min(365, Math.max(1, Number(req.nextUrl.searchParams.get('days') ?? '30')))
+    const endDate      = new Date()
+    const startDate    = new Date(Date.now() - days * 86_400_000)
+    const granularity  = days > 60 ? 'month' : 'week'
+    const startDateStr = startDate.toISOString().slice(0, 10)
 
-  const [cashFlow, statusBreakdown, topClients, timeliness] = await Promise.all([
-    getRevenueByPeriod(userId, startDate, endDate, granularity as 'week' | 'month'),
-    getInvoiceStatusBreakdown(userId, startDate),
-    getTopClientsByRevenue(userId, startDate, 5),
-    getPaymentTimelinessDistribution(userId, startDateStr),
-  ])
+    // Use allSettled so one failing query never crashes the whole endpoint.
+    const [cashFlowR, statusR, clientsR, timelinessR, riskR] = await Promise.allSettled([
+      getRevenueByPeriod(userId, startDate, endDate, granularity as 'week' | 'month'),
+      getInvoiceStatusBreakdown(userId, startDate),
+      getTopClientsByRevenue(userId, startDate, 5),
+      getPaymentTimelinessDistribution(userId, startDateStr),
+      getRiskDistribution(userId),
+    ])
 
-  return NextResponse.json({ cashFlow, statusBreakdown, topClients, timeliness, granularity, days })
+    const cashFlow      = cashFlowR.status   === 'fulfilled' ? cashFlowR.value   : []
+    const statusBreakdown = statusR.status   === 'fulfilled' ? statusR.value     : []
+    const topClients    = clientsR.status    === 'fulfilled' ? clientsR.value    : []
+    const timeliness    = timelinessR.status === 'fulfilled' ? timelinessR.value : []
+    const riskDistribution = riskR.status   === 'fulfilled'
+      ? riskR.value
+      : { low: 0, medium: 0, high: 0 }
+
+    return NextResponse.json({
+      cashFlow,
+      statusBreakdown,
+      topClients,
+      timeliness,
+      riskDistribution,
+      granularity,
+      days,
+    })
+  } catch (err) {
+    console.error('Analytics route error:', err)
+    return NextResponse.json({
+      cashFlow:          [],
+      statusBreakdown:   [],
+      topClients:        [],
+      timeliness:        [],
+      riskDistribution:  { low: 0, medium: 0, high: 0 },
+      granularity:       'week',
+      days:              30,
+    })
+  }
 }

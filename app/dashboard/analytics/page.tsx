@@ -24,11 +24,12 @@ import {
 type RangeKey = "30" | "60" | "90"
 
 interface AnalyticsData {
-  cashFlow:        { period: string; expected: number; actual: number }[]
-  statusBreakdown: { status: string; count: number }[]
-  topClients:      { name: string; revenue: number }[]
-  timeliness:      { bucket: string; count: number }[]
-  granularity:     string
+  cashFlow:          { period: string; expected: number; actual: number }[]
+  statusBreakdown:   { status: string; count: number }[]
+  topClients:        { name: string; revenue: number }[]
+  timeliness:        { bucket: string; count: number }[]
+  riskDistribution?: { low: number; medium: number; high: number }
+  granularity:       string
 }
 
 // ─── Constants ────────────────────────────────────────────────────────────────
@@ -220,36 +221,40 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* 1. Cash Flow line chart */}
-        <ChartCard
-          title="Cash Flow"
-          subtitle={cashFlow.length === 0 && !loading ? "No invoices in this period" : "Expected vs actual income"}
-        >
-          <ResponsiveContainer width="100%" height={260}>
-            <LineChart data={cashFlow} margin={{ top: 5, right: 8, left: -10, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
-              <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} dy={8} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={v => `$${(Number(v) / 1000).toFixed(0)}k`} width={48} />
-              <Tooltip
-                content={({ active, payload, label }) =>
-                  active && payload?.length ? (
-                    <TooltipBox>
-                      <p className="font-semibold text-foreground mb-1.5">{label}</p>
-                      {payload.map(p => (
-                        <div key={p.name} className="flex items-center gap-2 text-muted-foreground">
-                          <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
-                          <span className="capitalize">{p.name}:</span>
-                          <span className="font-medium text-foreground ml-auto pl-4">{fmt(Number(p.value))}</span>
-                        </div>
-                      ))}
-                    </TooltipBox>
-                  ) : null
-                }
-              />
-              <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8, color: "#9ca3af" }} />
-              <Line type="monotone" dataKey="expected" name="Expected" stroke="#fafafa" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-              <Line type="monotone" dataKey="actual"   name="Actual"   stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-            </LineChart>
-          </ResponsiveContainer>
+        <ChartCard title="Cash Flow" subtitle="Expected vs actual income">
+          {cashFlow.length === 0 ? (
+            <div className="h-64 flex flex-col items-center justify-center gap-1.5">
+              <p className="text-sm font-medium text-muted-foreground">No invoice data in this period</p>
+              <p className="text-xs text-muted-foreground">Create invoices to see cash flow trends here</p>
+            </div>
+          ) : (
+            <ResponsiveContainer width="100%" height={260}>
+              <LineChart data={cashFlow} margin={{ top: 5, right: 8, left: -10, bottom: 0 }}>
+                <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
+                <XAxis dataKey="week" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} dy={8} />
+                <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} tickFormatter={v => `$${(Number(v) / 1000).toFixed(0)}k`} width={48} />
+                <Tooltip
+                  content={({ active, payload, label }) =>
+                    active && payload?.length ? (
+                      <TooltipBox>
+                        <p className="font-semibold text-foreground mb-1.5">{label}</p>
+                        {payload.map(p => (
+                          <div key={p.name} className="flex items-center gap-2 text-muted-foreground">
+                            <span className="w-2 h-2 rounded-full inline-block" style={{ background: p.color }} />
+                            <span className="capitalize">{p.name}:</span>
+                            <span className="font-medium text-foreground ml-auto pl-4">{fmt(Number(p.value))}</span>
+                          </div>
+                        ))}
+                      </TooltipBox>
+                    ) : null
+                  }
+                />
+                <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8, color: "#9ca3af" }} />
+                <Line type="monotone" dataKey="expected" name="Expected" stroke="#fafafa" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="actual"   name="Actual"   stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          )}
         </ChartCard>
 
         {/* 2. Invoice Status donut */}
@@ -335,35 +340,44 @@ export default function AnalyticsPage() {
 
         {/* 4. Payment Timeliness histogram */}
         <ChartCard title="Payment Timeliness" subtitle="Distribution of days-to-pay">
-          <ResponsiveContainer width="100%" height={260}>
-            <BarChart data={timeliness} margin={{ top: 5, right: 8, left: -10, bottom: 0 }}>
-              <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
-              <XAxis dataKey="bucket" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} dy={8} />
-              <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} width={36} allowDecimals={false} />
-              <Tooltip
-                cursor={{ fill: "var(--muted)" }}
-                content={({ active, payload, label }) =>
-                  active && payload?.length ? (
-                    <TooltipBox>
-                      <p className="font-semibold text-foreground mb-1">{label}</p>
-                      <p className="text-muted-foreground">Invoices: <span className="font-medium text-foreground">{payload[0].value}</span></p>
-                    </TooltipBox>
-                  ) : null
-                }
-              />
-              <Bar dataKey="count" radius={[5, 5, 0, 0]} barSize={44}>
-                {timeliness.map(d => (
-                  <Cell
-                    key={d.bucket}
-                    fill={d.bucket === "Early" || d.bucket === "0–7d" ? "#10b981" : d.bucket === "8–14d" ? "#f59e0b" : "#f43f5e"}
+          {timeliness.every(d => d.count === 0) ? (
+            <div className="h-64 flex flex-col items-center justify-center gap-1.5">
+              <p className="text-sm font-medium text-muted-foreground">No payment history yet</p>
+              <p className="text-xs text-muted-foreground">Mark invoices as paid to see timeliness here</p>
+            </div>
+          ) : (
+            <>
+              <ResponsiveContainer width="100%" height={260}>
+                <BarChart data={timeliness} margin={{ top: 5, right: 8, left: -10, bottom: 0 }}>
+                  <CartesianGrid vertical={false} stroke="var(--border)" strokeDasharray="4 4" />
+                  <XAxis dataKey="bucket" axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} dy={8} />
+                  <YAxis axisLine={false} tickLine={false} tick={{ fill: "var(--muted-foreground)", fontSize: 12 }} width={36} allowDecimals={false} />
+                  <Tooltip
+                    cursor={{ fill: "var(--muted)" }}
+                    content={({ active, payload, label }) =>
+                      active && payload?.length ? (
+                        <TooltipBox>
+                          <p className="font-semibold text-foreground mb-1">{label}</p>
+                          <p className="text-muted-foreground">Invoices: <span className="font-medium text-foreground">{payload[0].value}</span></p>
+                        </TooltipBox>
+                      ) : null
+                    }
                   />
-                ))}
-              </Bar>
-            </BarChart>
-          </ResponsiveContainer>
-          <p className="text-xs text-muted-foreground mt-4">
-            <span className="text-emerald-400 font-medium">Green</span> = on time · <span className="text-amber-400 font-medium">amber</span> = mild delay · <span className="text-rose-400 font-medium">red</span> = significant delay
-          </p>
+                  <Bar dataKey="count" radius={[5, 5, 0, 0]} barSize={44}>
+                    {timeliness.map(d => (
+                      <Cell
+                        key={d.bucket}
+                        fill={d.bucket === "Early" || d.bucket === "0–7d" ? "#10b981" : d.bucket === "8–14d" ? "#f59e0b" : "#f43f5e"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              <p className="text-xs text-muted-foreground mt-4">
+                <span className="text-emerald-400 font-medium">Green</span> = on time · <span className="text-amber-400 font-medium">amber</span> = mild delay · <span className="text-rose-400 font-medium">red</span> = significant delay
+              </p>
+            </>
+          )}
         </ChartCard>
       </div>
       )}
