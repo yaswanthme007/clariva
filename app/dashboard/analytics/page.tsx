@@ -52,9 +52,9 @@ function capitalize(s: string): string {
 }
 
 const RANGES: { key: RangeKey; label: string }[] = [
-  { key: "30", label: "Last 30 days" },
-  { key: "60", label: "Last 60 days" },
-  { key: "90", label: "Last 90 days" },
+  { key: "30", label: "Next 30 days" },
+  { key: "60", label: "Next 60 days" },
+  { key: "90", label: "Next 90 days" },
 ]
 
 function ChartCard({ title, subtitle, children }: { title: string; subtitle: string; children: React.ReactNode }) {
@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
       setLoading(true)
       setError("")
       try {
-        const res = await fetch(`/api/analytics?days=${range}`)
+        const res = await fetch(`/api/analytics?days=${range}&direction=future`)
         if (!res.ok) {
           setError("Failed to load analytics. Please try again.")
           return
@@ -221,7 +221,7 @@ export default function AnalyticsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
 
         {/* 1. Cash Flow line chart */}
-        <ChartCard title="Cash Flow" subtitle="Expected vs actual income">
+        <ChartCard title="Cash Flow" subtitle="Expected vs received payments">
           {cashFlow.length === 0 ? (
             <div className="h-64 flex flex-col items-center justify-center gap-1.5">
               <p className="text-sm font-medium text-muted-foreground">No invoice data in this period</p>
@@ -251,7 +251,7 @@ export default function AnalyticsPage() {
                 />
                 <Legend iconType="plainline" wrapperStyle={{ fontSize: 12, paddingTop: 8, color: "#9ca3af" }} />
                 <Line type="monotone" dataKey="expected" name="Expected" stroke="#fafafa" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
-                <Line type="monotone" dataKey="actual"   name="Actual"   stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
+                <Line type="monotone" dataKey="actual"   name="Received" stroke="#10b981" strokeWidth={2.5} dot={{ r: 3 }} activeDot={{ r: 5 }} />
               </LineChart>
             </ResponsiveContainer>
           )}

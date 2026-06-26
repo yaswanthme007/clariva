@@ -69,12 +69,16 @@ Return JSON: {"subject": "...", "body": "..."}`,
     body = raw
   }
 
-  await pool.query(
-    `INSERT INTO reminders
-       (invoice_id, user_id, email_subject, email_body, status, reminder_type, scheduled_at)
-     VALUES ($1, $2, $3, $4, 'draft', 'ai_generated', NOW())`,
-    [invoiceId, userId, subject, body]
-  )
+  try {
+    await pool.query(
+      `INSERT INTO reminders
+         (invoice_id, user_id, email_subject, email_body, status, reminder_type, scheduled_at)
+       VALUES ($1, $2, $3, $4, 'draft', 'ai_generated', NOW())`,
+      [invoiceId, userId, subject, body]
+    )
+  } catch {
+    // reminders table may not exist — still return the generated email
+  }
 
   return NextResponse.json({ subject, body })
 }

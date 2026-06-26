@@ -11,7 +11,7 @@ export async function GET(_req: NextRequest, { params }: Params) {
 
   const { id } = await params
 
-  const [clientRes, statsRes, paymentStatsRes, monthlyRes, invoicesRes] = await Promise.all([
+  const [clientR, statsR, paymentStatsR, monthlyR, invoicesR] = await Promise.allSettled([
     pool.query(
       'SELECT * FROM clients WHERE id = $1 AND user_id = $2',
       [id, userId]
@@ -52,21 +52,23 @@ export async function GET(_req: NextRequest, { params }: Params) {
     ),
   ])
 
-  const client = clientRes.rows[0]
+  const client = clientR.status === 'fulfilled' ? clientR.value.rows[0] : null
   if (!client) return NextResponse.json({ error: 'Not found' }, { status: 404 })
 
-  const stats = statsRes.rows[0]
-  const payStats = paymentStatsRes.rows[0]
+  const stats    = statsR.status    === 'fulfilled' ? statsR.value.rows[0]         : { invoice_count: 0, outstanding: 0 }
+  const payStats = paymentStatsR.status === 'fulfilled' ? paymentStatsR.value.rows[0] : { total_paid: 0, on_time_count: 0 }
+  const monthly  = monthlyR.status  === 'fulfilled' ? monthlyR.value.rows           : []
+  const invoices = invoicesR.status === 'fulfilled' ? invoicesR.value.rows          : []
 
   return NextResponse.json({
     client: {
       ...client,
-      invoice_count:  stats.invoice_count,
-      outstanding:    stats.outstanding,
-      total_paid_count: payStats.total_paid,
-      on_time_count:  payStats.on_time_count,
-      monthly:        monthlyRes.rows,
-      invoices:       invoicesRes.rows,
+      invoice_count:    stats.invoice_count,
+      outstanding:      stats.outstanding,
+      total_paid_count: payStats?.total_paid    ?? 0,
+      on_time_count:    payStats?.on_time_count ?? 0,
+      monthly,
+      invoices,
     },
   })
 }

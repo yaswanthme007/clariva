@@ -68,7 +68,7 @@ export function CashFlowChart() {
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {
-    fetch("/api/analytics?days=30&direction=future")
+    fetch("/api/analytics?days=60&direction=future")
       .then(r => (r.ok ? r.json() : null))
       .then(json => {
         if (json?.cashFlow && json.cashFlow.length > 0) {
@@ -93,8 +93,8 @@ export function CashFlowChart() {
       {/* Header */}
       <div className="flex items-start justify-between mb-6">
         <div>
-          <h2 className="text-base font-semibold text-foreground">Cash Flow — Next 30 Days</h2>
-          <p className="text-sm text-muted-foreground mt-0.5">Upcoming expected payments, by week</p>
+          <h2 className="text-base font-semibold text-foreground">Cash Flow — Next 60 Days</h2>
+          <p className="text-sm text-muted-foreground mt-0.5">Expected incoming payments by due date</p>
         </div>
         <div className="flex items-center gap-4 text-xs text-muted-foreground">
           <span className="flex items-center gap-1.5">
@@ -122,7 +122,7 @@ export function CashFlowChart() {
         </div>
       ) : data.length === 0 ? (
         <div className="h-[220px] flex flex-col items-center justify-center gap-2">
-          <p className="text-sm text-muted-foreground">No upcoming invoices in the next 30 days</p>
+          <p className="text-sm text-muted-foreground">No upcoming invoices in the next 60 days</p>
           <p className="text-xs text-muted-foreground">Create invoices with future due dates to see cash flow here</p>
         </div>
       ) : (
@@ -152,7 +152,7 @@ export function CashFlowChart() {
 
       {!loading && data.length > 0 && (
         <p className="text-xs text-muted-foreground mt-4">
-          Projections based on invoice due dates · Next 30 days
+          Projections based on invoice due dates · Next 60 days
         </p>
       )}
     </div>

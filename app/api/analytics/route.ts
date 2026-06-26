@@ -20,14 +20,18 @@ export async function GET(req: NextRequest) {
     const startDate = direction === 'future' ? now : new Date(now.getTime() - days * 86_400_000)
     const endDate   = direction === 'future' ? new Date(now.getTime() + days * 86_400_000) : now
     const granularity  = days > 60 ? 'month' : 'week'
-    const startDateStr = startDate.toISOString().slice(0, 10)
+
+    // Non-cashflow queries always look back 365 days so Status / Top Clients /
+    // Timeliness charts are populated regardless of whether direction=future.
+    const historyStart    = new Date(now.getTime() - 365 * 86_400_000)
+    const historyStartStr = historyStart.toISOString().slice(0, 10)
 
     // Use allSettled so one failing query never crashes the whole endpoint.
     const [cashFlowR, statusR, clientsR, timelinessR, riskR] = await Promise.allSettled([
       getRevenueByPeriod(userId, startDate, endDate, granularity as 'week' | 'month'),
-      getInvoiceStatusBreakdown(userId, startDate),
-      getTopClientsByRevenue(userId, startDate, 5),
-      getPaymentTimelinessDistribution(userId, startDateStr),
+      getInvoiceStatusBreakdown(userId, historyStart),
+      getTopClientsByRevenue(userId, historyStart, 5),
+      getPaymentTimelinessDistribution(userId, historyStartStr),
       getRiskDistribution(userId),
     ])
 
