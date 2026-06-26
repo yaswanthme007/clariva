@@ -21,6 +21,8 @@ const credentialsSchema = z.object({
 })
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
+  trustHost: true,
+  secret: process.env.AUTH_SECRET ?? process.env.NEXTAUTH_SECRET,
   session: { strategy: 'jwt' },
   pages: { signIn: '/login' },
   providers: [
@@ -50,17 +52,23 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         const valid = await bcrypt.compare(password, user.password_hash)
         if (!valid) return null
 
-        return { id: user.id, email: user.email, name: user.name }
+        const result = { id: user.id, email: user.email, name: user.name }
+        console.log('AUTHORIZE result:', result.email)
+        return result
       },
     }),
   ],
   callbacks: {
     jwt({ token, user }) {
-      if (user?.id) token.sub = user.id
+      if (user) {
+        token.id = user.id
+        token.sub = user.id
+      }
       return token
     },
     session({ session, token }) {
-      if (token.sub) session.user.id = token.sub
+      if (token.id) session.user.id = token.id as string
+      else if (token.sub) session.user.id = token.sub
       return session
     },
   },
