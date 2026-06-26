@@ -18,6 +18,7 @@ import {
   X,
   Loader2,
   AlertCircle,
+  Download,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -233,6 +234,7 @@ export default function InvoiceDetailPage() {
   const [copied,          setCopied]          = useState(false)
   const [markPaidPhase,   setMarkPaidPhase]   = useState<"idle" | "confirming" | "saving">("idle")
   const [showConfetti,    setShowConfetti]    = useState(false)
+  const [downloading,     setDownloading]     = useState(false)
 
   const riskCalledRef = useRef(false)
 
@@ -306,6 +308,26 @@ Best regards`
     navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
+  }
+
+  async function handleDownloadPdf() {
+    if (!id || !invoice) return
+    setDownloading(true)
+    try {
+      const res = await fetch(`/api/invoices/${id}/pdf`)
+      if (!res.ok) return
+      const blob = await res.blob()
+      const url  = URL.createObjectURL(blob)
+      const a    = document.createElement("a")
+      a.href     = url
+      a.download = `invoice-${invoice.invoiceNumber}.pdf`
+      document.body.appendChild(a)
+      a.click()
+      document.body.removeChild(a)
+      URL.revokeObjectURL(url)
+    } finally {
+      setDownloading(false)
+    }
   }
 
   async function handleGenerateReminder() {
@@ -443,6 +465,17 @@ Best regards`
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
+            <button
+              onClick={handleDownloadPdf}
+              disabled={downloading}
+              className="flex items-center gap-2 h-9 px-4 rounded-lg text-sm font-semibold border border-border bg-card text-foreground hover:bg-muted transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+            >
+              {downloading
+                ? <><Loader2 className="w-4 h-4 animate-spin" /> Generating…</>
+                : <><Download className="w-4 h-4" /> Download PDF</>
+              }
+            </button>
+
             <button
               onClick={handleGenerateReminder}
               disabled={generatingEmail}

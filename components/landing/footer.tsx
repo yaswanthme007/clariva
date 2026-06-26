@@ -1,18 +1,21 @@
+'use client'
+
 import Link from 'next/link'
 import { Zap } from 'lucide-react'
 
-const links = {
-  Product: ['Features', 'Pricing', 'Changelog', 'Roadmap'],
-  Company: ['About', 'Blog', 'Careers', 'Press'],
-  Resources: ['Docs', 'API', 'Integrations', 'Status'],
-  Legal: ['Privacy', 'Terms', 'Security', 'Cookies'],
+function smoothScroll(e: React.MouseEvent<HTMLAnchorElement>, href: string) {
+  if (!href.startsWith('#')) return
+  const el = document.querySelector(href)
+  if (!el) return
+  e.preventDefault()
+  el.scrollIntoView({ behavior: 'smooth', block: 'start' })
 }
 
 export function Footer() {
   return (
     <footer className="border-t border-border bg-card">
       <div className="max-w-6xl mx-auto px-5 sm:px-8 py-14">
-        <div className="grid grid-cols-2 md:grid-cols-5 gap-10">
+        <div className="grid grid-cols-2 md:grid-cols-3 gap-10">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1 flex flex-col gap-4">
             <Link href="/" className="flex items-center gap-2">
@@ -29,26 +32,59 @@ export function Footer() {
             </p>
           </div>
 
-          {/* Link columns */}
-          {Object.entries(links).map(([heading, items]) => (
-            <div key={heading}>
-              <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-4">
-                {heading}
-              </h3>
-              <ul className="flex flex-col gap-2.5">
-                {items.map((item) => (
-                  <li key={item}>
-                    <Link
-                      href="#"
-                      className="text-sm text-muted-foreground hover:text-foreground transition-colors"
-                    >
-                      {item}
-                    </Link>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ))}
+          {/* Product */}
+          <div>
+            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-4">
+              Product
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              <li>
+                <a
+                  href="#features"
+                  onClick={(e) => smoothScroll(e, '#features')}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Features
+                </a>
+              </li>
+              <li>
+                <a
+                  href="#how-it-works"
+                  onClick={(e) => smoothScroll(e, '#how-it-works')}
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  How it works
+                </a>
+              </li>
+            </ul>
+          </div>
+
+          {/* Company */}
+          <div>
+            <h3 className="text-xs font-semibold text-foreground uppercase tracking-wide mb-4">
+              Company
+            </h3>
+            <ul className="flex flex-col gap-2.5">
+              <li>
+                <a
+                  href="https://github.com/yaswanthme007/clariva"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  GitHub
+                </a>
+              </li>
+              <li>
+                <a
+                  href="mailto:hello@clariva.com"
+                  className="text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  Contact
+                </a>
+              </li>
+            </ul>
+          </div>
         </div>
 
         {/* Bottom bar */}

@@ -176,7 +176,7 @@ export function Hero() {
                       Invoice Risk Dashboard
                     </p>
                     <p className="text-sm font-semibold text-foreground mt-0.5">
-                      June 2025 · 3 open invoices
+                      June 2026 · 3 open invoices
                     </p>
                   </div>
                   <span className="text-xs font-medium bg-primary/10 text-primary px-2.5 py-1 rounded-full">

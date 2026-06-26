@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  serverExternalPackages: ['pg', 'bcryptjs'],
+  serverExternalPackages: ['pg', 'bcryptjs', 'pdfkit'],
   typescript: {
     ignoreBuildErrors: true,
   },
