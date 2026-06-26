@@ -14,11 +14,10 @@ import {
   Clock,
   AlertTriangle,
   ShieldCheck,
-  Pencil,
-  X,
   Loader2,
   AlertCircle,
   Download,
+  RefreshCw,
 } from "lucide-react"
 import { Skeleton } from "@/components/ui/skeleton"
 
@@ -226,37 +225,15 @@ export default function InvoiceDetailPage() {
   const [loading,         setLoading]         = useState(true)
   const [fetchError,      setFetchError]      = useState("")
   const [status,          setStatus]          = useState<Status>("Pending")
-  const [emailOpen,       setEmailOpen]       = useState(false)
-  const [emailBody,       setEmailBody]       = useState("")
-  const [aiEmailSubject,  setAiEmailSubject]  = useState<string | null>(null)
+  const [reminderData,    setReminderData]    = useState<{ subject: string; body: string } | null>(null)
   const [generatingEmail, setGeneratingEmail] = useState(false)
-  const [editingEmail,    setEditingEmail]    = useState(false)
   const [copied,          setCopied]          = useState(false)
   const [markPaidPhase,   setMarkPaidPhase]   = useState<"idle" | "confirming" | "saving">("idle")
   const [showConfetti,    setShowConfetti]    = useState(false)
   const [downloading,     setDownloading]     = useState(false)
 
   const riskCalledRef = useRef(false)
-
-  function buildEmailBody(inv: InvoiceData): string {
-    return `Hi ${inv.client},
-
-I hope this message finds you well. I'm reaching out regarding invoice ${inv.invoiceNumber} for ${fmt(inv.amount)}, which was due on ${inv.dueDate}.
-
-As of today, we haven't received payment. Could you please let us know the status or expected payment date?
-
-If there's anything on your end we can help clarify, don't hesitate to reach out.
-
-Invoice details:
-  • Invoice #: ${inv.invoiceNumber}
-  • Amount due: ${fmt(inv.amount)}
-  • Due date: ${inv.dueDate}
-  • Description: ${inv.description}
-
-Thank you for your prompt attention.
-
-Best regards`
-  }
+  const reminderRef   = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     if (!id) return
@@ -273,7 +250,6 @@ Best regards`
         const parsed = parseInvoice(raw)
         setInvoice(parsed)
         setStatus(parsed.status)
-        setEmailBody(buildEmailBody(parsed))
       } catch {
         setFetchError("Something went wrong loading this invoice. Please try again.")
       } finally {
@@ -301,11 +277,9 @@ Best regards`
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, invoice])
 
-  const emailSubject = aiEmailSubject
-    ?? (invoice ? `Payment Reminder: ${invoice.invoiceNumber} — ${fmt(invoice.amount)} overdue` : "")
-
-  function copyEmail() {
-    navigator.clipboard.writeText(`Subject: ${emailSubject}\n\n${emailBody}`)
+  function copyReminder() {
+    if (!reminderData) return
+    navigator.clipboard.writeText(`Subject: ${reminderData.subject}\n\n${reminderData.body}`)
     setCopied(true)
     setTimeout(() => setCopied(false), 2000)
   }
@@ -341,9 +315,13 @@ Best regards`
       })
       if (!res.ok) return
       const { subject, body } = await res.json()
-      if (subject) setAiEmailSubject(subject)
-      if (body)    setEmailBody(body)
-      setEmailOpen(true)
+      if (subject || body) {
+        setReminderData({ subject: subject ?? "", body: body ?? "" })
+        // Give React one tick to render the card, then scroll into view
+        setTimeout(() => {
+          reminderRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
+        }, 80)
+      }
     } finally {
       setGeneratingEmail(false)
     }
@@ -437,6 +415,16 @@ Best regards`
 
   return (
     <div className="flex flex-col gap-6 p-6 md:p-8 pt-20 md:pt-8 min-h-full max-w-5xl mx-auto w-full">
+
+      <style>{`
+        @keyframes reminderFadeUp {
+          from { opacity: 0; transform: translateY(14px); }
+          to   { opacity: 1; transform: translateY(0); }
+        }
+        .reminder-card-enter {
+          animation: reminderFadeUp 0.38s cubic-bezier(0.22,1,0.36,1) forwards;
+        }
+      `}</style>
 
       {showConfetti && <ConfettiExplosion />}
 
@@ -539,69 +527,6 @@ Best regards`
         </div>
       </div>
 
-      {/* Reminder email panel */}
-      {emailOpen && (
-        <div className="bg-card rounded-xl overflow-hidden" style={{ border: "1px solid var(--border)" }}>
-          <div className="flex items-center justify-between px-6 py-4" style={{ borderBottom: "1px solid var(--border)" }}>
-            <div className="flex items-center gap-2">
-              <Mail className="w-4 h-4 text-primary" />
-              <p className="text-sm font-semibold text-foreground">Draft Reminder Email</p>
-              {aiEmailSubject && (
-                <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
-                  <Sparkles className="w-3 h-3" /> AI Generated
-                </span>
-              )}
-            </div>
-            <div className="flex items-center gap-2">
-              <button
-                onClick={() => setEditingEmail(v => !v)}
-                className={`flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium transition-colors ${
-                  editingEmail ? "bg-primary text-primary-foreground" : "border border-border text-muted-foreground hover:bg-muted"
-                }`}
-              >
-                <Pencil className="w-3 h-3" />
-                {editingEmail ? "Done" : "Edit"}
-              </button>
-              <button
-                onClick={copyEmail}
-                className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted transition-colors"
-              >
-                {copied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
-                {copied ? "Copied!" : "Copy"}
-              </button>
-              <button
-                onClick={() => setEmailOpen(false)}
-                className="p-1 rounded-md text-muted-foreground hover:bg-muted transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-          </div>
-          <div className="px-6 py-4 flex flex-col gap-3">
-            <div>
-              <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Subject</p>
-              <p className="text-sm text-foreground font-medium">{emailSubject}</p>
-            </div>
-            <div>
-              <p className="text-xs text-muted-foreground mb-1 font-medium uppercase tracking-wide">Body</p>
-              {editingEmail ? (
-                <textarea
-                  value={emailBody}
-                  onChange={e => setEmailBody(e.target.value)}
-                  rows={12}
-                  className="w-full text-sm text-foreground bg-muted/40 rounded-lg px-4 py-3 font-mono resize-y focus:outline-none focus:ring-2 focus:ring-white/20 transition-shadow"
-                  style={{ border: "1px solid var(--border)" }}
-                />
-              ) : (
-                <pre className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed bg-muted/30 rounded-lg px-4 py-3">
-                  {emailBody}
-                </pre>
-              )}
-            </div>
-          </div>
-        </div>
-      )}
-
       {/* Main grid */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
@@ -684,6 +609,78 @@ Best regards`
 
         </div>
       </div>
+
+      {/* ── AI-Generated Reminder ──────────────────────────────────────────────── */}
+      {reminderData && (
+        <div
+          ref={reminderRef}
+          className="bg-card rounded-xl overflow-hidden reminder-card-enter"
+          style={{ border: "1px solid var(--border)" }}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center justify-between px-6 py-4 flex-wrap gap-3"
+            style={{ borderBottom: "1px solid var(--border)" }}
+          >
+            <div className="flex items-center gap-2.5">
+              <div className="w-7 h-7 rounded-lg bg-primary/10 flex items-center justify-center shrink-0">
+                <Mail className="w-3.5 h-3.5 text-primary" />
+              </div>
+              <h2 className="text-sm font-semibold text-foreground">AI-Generated Reminder</h2>
+            </div>
+
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="flex items-center gap-1 text-xs text-emerald-400 font-medium">
+                <Sparkles className="w-3 h-3" />
+                AI Generated
+              </span>
+              <div className="w-px h-4 bg-border" />
+              <button
+                onClick={handleGenerateReminder}
+                disabled={generatingEmail}
+                className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted hover:text-foreground disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {generatingEmail
+                  ? <Loader2 className="w-3 h-3 animate-spin" />
+                  : <RefreshCw className="w-3 h-3" />
+                }
+                Regenerate
+              </button>
+              <button
+                onClick={copyReminder}
+                className="flex items-center gap-1.5 h-7 px-3 rounded-md text-xs font-medium border border-border text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              >
+                {copied
+                  ? <Check className="w-3 h-3 text-emerald-400" />
+                  : <Copy className="w-3 h-3" />
+                }
+                {copied ? "Copied!" : "Copy to Clipboard"}
+              </button>
+            </div>
+          </div>
+
+          {/* Body */}
+          <div className="px-6 py-5 flex flex-col gap-5">
+            {/* Subject */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Subject</p>
+              <p className="text-sm font-semibold text-foreground">{reminderData.subject}</p>
+            </div>
+
+            {/* Email body */}
+            <div>
+              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wide mb-1.5">Body</p>
+              <pre
+                className="text-sm text-foreground whitespace-pre-wrap font-sans leading-relaxed rounded-lg px-5 py-4 bg-muted/30"
+                style={{ borderLeft: "3px solid var(--primary)" }}
+              >
+                {reminderData.body}
+              </pre>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
