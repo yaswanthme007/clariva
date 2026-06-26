@@ -39,18 +39,8 @@ export default function LoginPage() {
   async function handleDemo() {
     setError("")
     setLoading(true)
-    try {
-      const result = await signIn("credentials", { email: "demo@clariva.com", password: "demo123", redirect: false })
-      if (result?.error) {
-        setError("Demo account unavailable. Please try the main login.")
-      } else {
-        router.push("/dashboard")
-      }
-    } catch {
-      setError("Something went wrong. Please try again.")
-    } finally {
-      setLoading(false)
-    }
+    await signIn("credentials", { email: "demo@clariva.com", password: "demo123", redirect: true, callbackUrl: "/dashboard" })
+    setLoading(false)
   }
 
   return (

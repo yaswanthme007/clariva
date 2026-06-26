@@ -124,10 +124,17 @@ function riskColor(score: number) {
 }
 
 function RiskRing({ score }: { score: number }) {
-  const r      = 44
-  const circ   = 2 * Math.PI * r
-  const filled = (score / 100) * circ
+  const [displayScore, setDisplayScore] = useState(0)
+  const r    = 44
+  const circ = 2 * Math.PI * r
+  const filled = (displayScore / 100) * circ
   const { stroke, text, label } = riskColor(score)
+
+  useEffect(() => {
+    const id = setTimeout(() => setDisplayScore(score), 60)
+    return () => clearTimeout(id)
+  }, [score])
+
   return (
     <div className="flex flex-col items-center gap-2">
       <div className="relative w-28 h-28">
@@ -140,7 +147,7 @@ function RiskRing({ score }: { score: number }) {
             strokeWidth="8"
             strokeLinecap="round"
             strokeDasharray={`${filled} ${circ}`}
-            style={{ transition: "stroke-dasharray 0.8s ease" }}
+            style={{ transition: "stroke-dasharray 0.9s cubic-bezier(0.22,1,0.36,1)" }}
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
