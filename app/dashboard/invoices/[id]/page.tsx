@@ -278,6 +278,12 @@ export default function InvoiceDetailPage() {
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, invoice])
 
+  useEffect(() => {
+    if (reminderData && reminderRef.current) {
+      reminderRef.current.scrollIntoView({ behavior: "smooth", block: "center" })
+    }
+  }, [reminderData])
+
   function copyReminder() {
     if (!reminderData) return
     navigator.clipboard.writeText(`Subject: ${reminderData.subject}\n\n${reminderData.body}`)
@@ -331,10 +337,6 @@ export default function InvoiceDetailPage() {
       console.log("[reminder] setReminderData →", { subject: subject.slice(0, 80), bodyLen: body.length })
 
       setReminderData({ subject, body })
-      // Give React one tick to mount the card, then scroll into view
-      setTimeout(() => {
-        reminderRef.current?.scrollIntoView({ behavior: "smooth", block: "nearest" })
-      }, 80)
     } catch (err) {
       console.error("[reminder] network error:", err)
       setReminderError("Network error — please check your connection and try again")
@@ -647,8 +649,8 @@ export default function InvoiceDetailPage() {
       {reminderData && (
         <div
           ref={reminderRef}
-          className="bg-card rounded-xl overflow-hidden reminder-card-enter"
-          style={{ border: "1px solid var(--border)" }}
+          className="bg-card rounded-xl overflow-hidden reminder-card-enter border-2 border-red-500 min-h-[200px]"
+          style={{ border: "2px solid red" }}
         >
           {/* Header */}
           <div
