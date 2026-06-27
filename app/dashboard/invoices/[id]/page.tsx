@@ -325,8 +325,6 @@ export default function InvoiceDetailPage() {
       let data: { subject?: string; body?: string; error?: string } = {}
       try { data = await res.json() } catch { /* non-JSON body */ }
 
-      console.log("[reminder] status:", res.status, "response:", data)
-
       if (!res.ok) {
         setReminderError(data.error ?? `Error ${res.status} — please try again`)
         return
@@ -334,11 +332,9 @@ export default function InvoiceDetailPage() {
 
       const subject = data.subject ?? ""
       const body    = data.body    ?? ""
-      console.log("[reminder] setReminderData →", { subject: subject.slice(0, 80), bodyLen: body.length })
-
       setReminderData({ subject, body })
     } catch (err) {
-      console.error("[reminder] network error:", err)
+      console.error("Network error:", err)
       setReminderError("Network error — please check your connection and try again")
     } finally {
       setGeneratingEmail(false)
@@ -649,8 +645,8 @@ export default function InvoiceDetailPage() {
       {reminderData && (
         <div
           ref={reminderRef}
-          className="bg-card rounded-xl overflow-hidden reminder-card-enter border-2 border-red-500 min-h-[200px]"
-          style={{ border: "2px solid red" }}
+          className="bg-card rounded-xl overflow-hidden reminder-card-enter"
+          style={{ border: "1px solid rgba(16,185,129,0.3)" }}
         >
           {/* Header */}
           <div
