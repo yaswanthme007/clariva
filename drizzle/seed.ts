@@ -266,6 +266,135 @@ async function seed() {
   }
   console.log('  invoices:', invoiceIds.length)
 
+  // ── 3b. Future invoices for cash flow demo ────────────────────────────────
+  const futureInvoices = [
+    {
+      client_id: acmeId,
+      invoice_number: 'INV-009',
+      issue_date: '2026-06-03',
+      due_date: '2026-07-03',
+      amount: '12500.00',
+      status: 'pending',
+      description: 'Q3 consulting services',
+      line_items: JSON.stringify([
+        { description: 'Q3 strategy consulting', qty: 5, unitPrice: 1500 },
+        { description: 'Executive advisory', qty: 5, unitPrice: 1000 },
+      ]),
+    },
+    {
+      client_id: betaId,
+      invoice_number: 'INV-010',
+      issue_date: '2026-06-08',
+      due_date: '2026-07-08',
+      amount: '6800.00',
+      status: 'pending',
+      description: 'Website maintenance retainer',
+      line_items: JSON.stringify([
+        { description: 'Monthly maintenance retainer', qty: 1, unitPrice: 4000 },
+        { description: 'Bug fixes & updates', qty: 8, unitPrice: 350 },
+      ]),
+    },
+    {
+      client_id: gammaId,
+      invoice_number: 'INV-011',
+      issue_date: '2026-06-15',
+      due_date: '2026-07-15',
+      amount: '9200.00',
+      status: 'pending',
+      description: 'Cloud infrastructure setup',
+      line_items: JSON.stringify([
+        { description: 'Architecture design', qty: 10, unitPrice: 600 },
+        { description: 'Implementation & configuration', qty: 8, unitPrice: 400 },
+      ]),
+    },
+    {
+      client_id: deltaId,
+      invoice_number: 'INV-012',
+      issue_date: '2026-06-20',
+      due_date: '2026-07-20',
+      amount: '15000.00',
+      status: 'pending',
+      description: 'Marketing campaign management',
+      line_items: JSON.stringify([
+        { description: 'Campaign strategy & planning', qty: 1, unitPrice: 5000 },
+        { description: 'Digital advertising management', qty: 1, unitPrice: 7500 },
+        { description: 'Performance reporting', qty: 5, unitPrice: 500 },
+      ]),
+    },
+    {
+      client_id: acmeId,
+      invoice_number: 'INV-013',
+      issue_date: '2026-06-28',
+      due_date: '2026-07-28',
+      amount: '7400.00',
+      status: 'pending',
+      description: 'Software integration services',
+      line_items: JSON.stringify([
+        { description: 'API integration development', qty: 8, unitPrice: 600 },
+        { description: 'Testing & QA', qty: 8, unitPrice: 325 },
+      ]),
+    },
+    {
+      client_id: betaId,
+      invoice_number: 'INV-014',
+      issue_date: '2026-07-06',
+      due_date: '2026-08-05',
+      amount: '4500.00',
+      status: 'pending',
+      description: 'SEO & content audit',
+      line_items: JSON.stringify([
+        { description: 'Technical SEO audit', qty: 1, unitPrice: 2500 },
+        { description: 'Content optimization', qty: 10, unitPrice: 200 },
+      ]),
+    },
+    {
+      client_id: gammaId,
+      invoice_number: 'INV-015',
+      issue_date: '2026-07-13',
+      due_date: '2026-08-12',
+      amount: '18000.00',
+      status: 'pending',
+      description: 'ERP system migration',
+      line_items: JSON.stringify([
+        { description: 'Data migration planning', qty: 1, unitPrice: 6000 },
+        { description: 'System configuration', qty: 20, unitPrice: 500 },
+        { description: 'Staff training sessions', qty: 4, unitPrice: 500 },
+      ]),
+    },
+    {
+      client_id: deltaId,
+      invoice_number: 'INV-016',
+      issue_date: '2026-07-19',
+      due_date: '2026-08-18',
+      amount: '5200.00',
+      status: 'pending',
+      description: 'Brand identity refresh',
+      line_items: JSON.stringify([
+        { description: 'Brand audit & research', qty: 1, unitPrice: 1800 },
+        { description: 'Logo & visual identity', qty: 1, unitPrice: 2400 },
+        { description: 'Brand guidelines document', qty: 1, unitPrice: 1000 },
+      ]),
+    },
+  ]
+
+  let futureCount = 0
+  for (const inv of futureInvoices) {
+    const { rows: [row] } = await run(
+      `INSERT INTO invoices
+         (user_id, client_id, invoice_number, issue_date, due_date, amount, currency,
+          status, description, line_items)
+       VALUES ($1,$2,$3,$4,$5,$6,'USD',$7,$8,$9::jsonb)
+       ON CONFLICT DO NOTHING
+       RETURNING id`,
+      [
+        userId, inv.client_id, inv.invoice_number, inv.issue_date, inv.due_date,
+        inv.amount, inv.status, inv.description, inv.line_items,
+      ]
+    )
+    if (row) futureCount++
+  }
+  console.log('  future invoices inserted:', futureCount, '(0 = already existed)')
+
   // ── 4. Payment history (for paid invoices) ────────────────────────────────
   const paidHistory = [
     // INV-001: Acme, paid 2 days early
