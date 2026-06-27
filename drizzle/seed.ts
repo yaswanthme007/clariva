@@ -268,19 +268,23 @@ async function seed() {
 
   // ── 3b. Future invoices for cash flow demo ────────────────────────────────
   const futureInvoices = [
+    // INV-009: Acme — paid early
     {
       client_id: acmeId,
       invoice_number: 'INV-009',
       issue_date: '2026-06-03',
       due_date: '2026-07-03',
       amount: '12500.00',
-      status: 'pending',
+      status: 'paid',
+      paid_at: '2026-06-28',
+      paid_amount: '12500.00',
       description: 'Q3 consulting services',
       line_items: JSON.stringify([
         { description: 'Q3 strategy consulting', qty: 5, unitPrice: 1500 },
         { description: 'Executive advisory', qty: 5, unitPrice: 1000 },
       ]),
     },
+    // INV-010: Beta — pending
     {
       client_id: betaId,
       invoice_number: 'INV-010',
@@ -288,12 +292,15 @@ async function seed() {
       due_date: '2026-07-08',
       amount: '6800.00',
       status: 'pending',
+      paid_at: null,
+      paid_amount: null,
       description: 'Website maintenance retainer',
       line_items: JSON.stringify([
         { description: 'Monthly maintenance retainer', qty: 1, unitPrice: 4000 },
         { description: 'Bug fixes & updates', qty: 8, unitPrice: 350 },
       ]),
     },
+    // INV-011: Gamma — pending
     {
       client_id: gammaId,
       invoice_number: 'INV-011',
@@ -301,19 +308,24 @@ async function seed() {
       due_date: '2026-07-15',
       amount: '9200.00',
       status: 'pending',
+      paid_at: null,
+      paid_amount: null,
       description: 'Cloud infrastructure setup',
       line_items: JSON.stringify([
         { description: 'Architecture design', qty: 10, unitPrice: 600 },
         { description: 'Implementation & configuration', qty: 8, unitPrice: 400 },
       ]),
     },
+    // INV-012: Delta — overdue (due date moved to past)
     {
       client_id: deltaId,
       invoice_number: 'INV-012',
-      issue_date: '2026-06-20',
-      due_date: '2026-07-20',
+      issue_date: '2026-05-21',
+      due_date: '2026-06-20',
       amount: '15000.00',
-      status: 'pending',
+      status: 'overdue',
+      paid_at: null,
+      paid_amount: null,
       description: 'Marketing campaign management',
       line_items: JSON.stringify([
         { description: 'Campaign strategy & planning', qty: 1, unitPrice: 5000 },
@@ -321,19 +333,23 @@ async function seed() {
         { description: 'Performance reporting', qty: 5, unitPrice: 500 },
       ]),
     },
+    // INV-013: Acme — paid early
     {
       client_id: acmeId,
       invoice_number: 'INV-013',
       issue_date: '2026-06-28',
       due_date: '2026-07-28',
       amount: '7400.00',
-      status: 'pending',
+      status: 'paid',
+      paid_at: '2026-07-25',
+      paid_amount: '7400.00',
       description: 'Software integration services',
       line_items: JSON.stringify([
         { description: 'API integration development', qty: 8, unitPrice: 600 },
         { description: 'Testing & QA', qty: 8, unitPrice: 325 },
       ]),
     },
+    // INV-014: Beta — pending
     {
       client_id: betaId,
       invoice_number: 'INV-014',
@@ -341,19 +357,24 @@ async function seed() {
       due_date: '2026-08-05',
       amount: '4500.00',
       status: 'pending',
+      paid_at: null,
+      paid_amount: null,
       description: 'SEO & content audit',
       line_items: JSON.stringify([
         { description: 'Technical SEO audit', qty: 1, unitPrice: 2500 },
         { description: 'Content optimization', qty: 10, unitPrice: 200 },
       ]),
     },
+    // INV-015: Gamma — overdue (due date moved to past)
     {
       client_id: gammaId,
       invoice_number: 'INV-015',
-      issue_date: '2026-07-13',
-      due_date: '2026-08-12',
+      issue_date: '2026-05-16',
+      due_date: '2026-06-15',
       amount: '18000.00',
-      status: 'pending',
+      status: 'overdue',
+      paid_at: null,
+      paid_amount: null,
       description: 'ERP system migration',
       line_items: JSON.stringify([
         { description: 'Data migration planning', qty: 1, unitPrice: 6000 },
@@ -361,6 +382,7 @@ async function seed() {
         { description: 'Staff training sessions', qty: 4, unitPrice: 500 },
       ]),
     },
+    // INV-016: Delta — pending
     {
       client_id: deltaId,
       invoice_number: 'INV-016',
@@ -368,6 +390,8 @@ async function seed() {
       due_date: '2026-08-18',
       amount: '5200.00',
       status: 'pending',
+      paid_at: null,
+      paid_amount: null,
       description: 'Brand identity refresh',
       line_items: JSON.stringify([
         { description: 'Brand audit & research', qty: 1, unitPrice: 1800 },
@@ -377,23 +401,64 @@ async function seed() {
     },
   ]
 
-  let futureCount = 0
+  // Delete existing future invoices so we can re-insert with correct statuses
+  await run(
+    `DELETE FROM invoices
+     WHERE user_id = $1
+       AND invoice_number IN ('INV-009','INV-010','INV-011','INV-012','INV-013','INV-014','INV-015','INV-016')`,
+    [userId]
+  )
+
+  const futureInvoiceIds: Record<string, string> = {}
   for (const inv of futureInvoices) {
     const { rows: [row] } = await run(
       `INSERT INTO invoices
          (user_id, client_id, invoice_number, issue_date, due_date, amount, currency,
-          status, description, line_items)
-       VALUES ($1,$2,$3,$4,$5,$6,'USD',$7,$8,$9::jsonb)
-       ON CONFLICT DO NOTHING
+          status, description, line_items, paid_at, paid_amount)
+       VALUES ($1,$2,$3,$4,$5,$6,'USD',$7,$8,$9::jsonb,$10,$11)
        RETURNING id`,
       [
         userId, inv.client_id, inv.invoice_number, inv.issue_date, inv.due_date,
         inv.amount, inv.status, inv.description, inv.line_items,
+        inv.paid_at, inv.paid_amount,
       ]
     )
-    if (row) futureCount++
+    if (row) futureInvoiceIds[inv.invoice_number] = row.id
   }
-  console.log('  future invoices inserted:', futureCount, '(0 = already existed)')
+  console.log('  future invoices inserted:', Object.keys(futureInvoiceIds).length)
+
+  // Payment history for newly paid future invoices
+  const futurePaidHistory = [
+    // INV-009: Acme, paid 5 days early
+    {
+      client_id:  acmeId,
+      invoice_id: futureInvoiceIds['INV-009'],
+      amount:     '12500.00',
+      due_date:   '2026-07-03',
+      paid_date:  '2026-06-28',
+      days_late:  -5,
+    },
+    // INV-013: Acme, paid 3 days early
+    {
+      client_id:  acmeId,
+      invoice_id: futureInvoiceIds['INV-013'],
+      amount:     '7400.00',
+      due_date:   '2026-07-28',
+      paid_date:  '2026-07-25',
+      days_late:  -3,
+    },
+  ]
+
+  for (const ph of futurePaidHistory) {
+    if (!ph.invoice_id) continue
+    await run(
+      `INSERT INTO payment_history (client_id, invoice_id, invoice_amount, due_date, paid_date, days_late)
+       VALUES ($1,$2,$3,$4,$5,$6)
+       ON CONFLICT DO NOTHING`,
+      [ph.client_id, ph.invoice_id, ph.amount, ph.due_date, ph.paid_date, ph.days_late]
+    )
+  }
+  console.log('  future payment_history rows:', futurePaidHistory.filter(p => p.invoice_id).length)
 
   // ── 4. Payment history (for paid invoices) ────────────────────────────────
   const paidHistory = [
