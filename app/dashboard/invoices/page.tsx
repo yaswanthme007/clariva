@@ -31,7 +31,6 @@ interface Invoice {
   amount: number
   issueDate: string
   dueDate: string
-  dueDateRaw: string
   status: Status
   risk: Risk
   riskScore: number
@@ -72,18 +71,6 @@ function StatusBadge({ status }: { status: Status }) {
   )
 }
 
-function relativeDueLabel(status: Status, dueDateRaw: string): { text: string; cls: string } | null {
-  if (status === "Paid") return null
-  const days = Math.floor((Date.now() - new Date(dueDateRaw).getTime()) / 86_400_000)
-  if (status === "Overdue") {
-    return { text: `${days} day${days !== 1 ? "s" : ""} late`, cls: "text-rose-400" }
-  }
-  if (status === "Pending" && days < 0) {
-    const dueIn = -days
-    return { text: `Due in ${dueIn} day${dueIn !== 1 ? "s" : ""}`, cls: "text-amber-400/80" }
-  }
-  return null
-}
 
 function RiskBar({ score, risk }: { score: number; risk: Risk }) {
   return (
@@ -127,13 +114,12 @@ export default function InvoicesPage() {
       const data = await res.json()
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       setInvoices((data.invoices ?? []).map((r: any) => ({
-        id:         r.invoice_number,
-        dbId:       r.id,
-        client:     r.client_name,
-        amount:     Number(r.amount),
-        issueDate:  formatDate(r.issue_date),
-        dueDate:    formatDate(r.due_date),
-        dueDateRaw: r.due_date,
+        id:        r.invoice_number,
+        dbId:      r.id,
+        client:    r.client_name,
+        amount:    Number(r.amount),
+        issueDate: formatDate(r.issue_date),
+        dueDate:   formatDate(r.due_date),
         status:    capitalize(r.status) as Status,
         risk:      (r.risk_label ?? "Low") as Risk,
         riskScore: Number(r.risk_score ?? 0),
@@ -369,12 +355,7 @@ export default function InvoicesPage() {
                     <td className="px-4 py-3.5 font-semibold text-foreground tabular-nums whitespace-nowrap">{fmt(inv.amount)}</td>
                     <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap tabular-nums">{inv.issueDate}</td>
                     <td className="px-4 py-3.5 text-muted-foreground whitespace-nowrap tabular-nums">{inv.dueDate}</td>
-                    <td className="px-4 py-3.5">
-                      <div className="flex flex-col gap-0.5">
-                        <StatusBadge status={inv.status} />
-                        {(() => { const l = relativeDueLabel(inv.status, inv.dueDateRaw); return l ? <span className={`text-[10px] font-medium ${l.cls}`}>{l.text}</span> : null })()}
-                      </div>
-                    </td>
+                    <td className="px-4 py-3.5"><StatusBadge status={inv.status} /></td>
                     <td className="px-4 py-3.5"><RiskBar score={inv.riskScore} risk={inv.risk} /></td>
                     <td className="px-4 py-3.5">
                       <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
@@ -421,10 +402,7 @@ export default function InvoicesPage() {
                   <span className="text-xs text-muted-foreground">{inv.dueDate}</span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="flex flex-col gap-0.5">
-                    <StatusBadge status={inv.status} />
-                    {(() => { const l = relativeDueLabel(inv.status, inv.dueDateRaw); return l ? <span className={`text-[10px] font-medium ${l.cls}`}>{l.text}</span> : null })()}
-                  </div>
+                  <StatusBadge status={inv.status} />
                   <div className="flex-1"><RiskBar score={inv.riskScore} risk={inv.risk} /></div>
                 </div>
                 <div className="flex items-center gap-2 pt-1">
