@@ -45,6 +45,7 @@ interface InvoiceData {
   amount: number
   issueDate: string
   dueDate: string
+  dueDateRaw: string
   status: Status
   riskScore: number
   riskReason: string
@@ -148,6 +149,7 @@ function parseInvoice(r: any): InvoiceData {
     amount:        Number(r.amount),
     issueDate,
     dueDate,
+    dueDateRaw:    r.due_date,
     status,
     riskScore:     Number(r.risk_score ?? 0),
     riskReason:    r.risk_reason ?? "",
@@ -162,6 +164,19 @@ const STATUS_STYLE: Record<Status, string> = {
   Paid:    "bg-emerald-500/10 text-emerald-400 ring-1 ring-inset ring-emerald-500/20",
   Pending: "bg-amber-500/10   text-amber-400   ring-1 ring-inset ring-amber-500/20",
   Overdue: "bg-rose-500/10    text-rose-400    ring-1 ring-inset ring-rose-500/20",
+}
+
+function relativeDueLabel(status: Status, dueDateRaw: string): { text: string; cls: string } | null {
+  if (status === "Paid") return null
+  const days = Math.floor((Date.now() - new Date(dueDateRaw).getTime()) / 86_400_000)
+  if (status === "Overdue") {
+    return { text: `${days} day${days !== 1 ? "s" : ""} late`, cls: "text-rose-400" }
+  }
+  if (status === "Pending" && days < 0) {
+    const dueIn = -days
+    return { text: `Due in ${dueIn} day${dueIn !== 1 ? "s" : ""}`, cls: "text-amber-400/80" }
+  }
+  return null
 }
 
 function riskColor(score: number) {
@@ -459,6 +474,7 @@ export default function InvoiceDetailPage() {
               <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold ${STATUS_STYLE[status]}`}>
                 {status}
               </span>
+              {(() => { const l = relativeDueLabel(status, invoice.dueDateRaw); return l ? <span className={`text-xs font-medium ${l.cls}`}>{l.text}</span> : null })()}
             </div>
             <p className="text-muted-foreground mt-1">
               <span className="font-medium text-foreground">{invoice.client}</span>
